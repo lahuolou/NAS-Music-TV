@@ -100,9 +100,7 @@ import com.lnh.nasmusictv.ui.screens.settings.VisualEffectsActions
 import com.lnh.nasmusictv.ui.screens.settings.VisualEffectsSettingsSection
 import com.lnh.nasmusictv.ui.screens.settings.VisualEffectsSettingsState
 import com.lnh.nasmusictv.ui.theme.FontSize
-import com.lnh.nasmusictv.ui.theme.LocalUiMode
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
-import com.lnh.nasmusictv.ui.theme.UiMode
 
 /**
  * 设置屏幕 — 左侧为导航侧边栏（settings-sidebar），右侧为具体选项（settings-content）
@@ -451,12 +449,7 @@ var activeSection by remember { mutableStateOf(SettingsSection.GENERAL) }
     // Composable 上下文，不能调 stringResource）
 
     Row(
-        modifier = modifier.fillMaxSize().padding(
-            when {
-                LocalUiMode.current == UiMode.PhoneLandscape -> 16.dp
-                else -> 32.dp
-            }
-        )
+        modifier = modifier.fillMaxSize().padding(32.dp)
     ) {
         // --- 左侧：侧边导航栏（bg2 Surface 背景）---
         Column(

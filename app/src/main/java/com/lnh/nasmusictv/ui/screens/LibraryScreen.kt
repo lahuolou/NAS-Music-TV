@@ -443,11 +443,10 @@ fun LibraryScreen(
     val showPlayAll = activeTab != LibraryTab.SEARCH && activeTab != LibraryTab.DISCOVER && activeTab != LibraryTab.RADIO && playAllSongs.isNotEmpty()
 
     Box(modifier = modifier.fillMaxSize()) {
-        val uiMode = LocalUiMode.current
         Column(
             modifier = Modifier.fillMaxSize().padding(
-                horizontal = if (uiMode == UiMode.PhoneLandscape) 16.dp else 32.dp,
-                vertical = if (uiMode == UiMode.PhoneLandscape) 0.dp else 20.dp
+                horizontal = 32.dp,
+                vertical = 20.dp
             )
         ) {
             // 顶部标题 + TAB + 播放全部
@@ -545,7 +544,7 @@ fun LibraryScreen(
 
             // 手机横屏在**内容区**左右滑切换子 TAB —— 用户明确要求
             // 「手机端支持横滑」；TV 端**不加**手势，保持逐字不变（遥控器也没有横向滑动手势）。
-            // ⚠️ 按 B1 硬规则显式读 `UiMode.PhoneLandscape`（竖屏已下线）。
+            // ⚠️ 手机横屏横滑手势已在 TV-only 收敛中移除（enabled 恒为 false）。
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -553,7 +552,7 @@ fun LibraryScreen(
                     .onSizeChanged { contentWidthPx.intValue = it.width }
                     // 真 pager：拖动中当前页划走、相邻页跟进（见上方说明）
                     .libraryTabSwipe(
-                        enabled = uiMode == UiMode.PhoneLandscape,
+                        enabled = false,
                         onDragStart = {
                             tabDragging = true
                             tabDragBaseIdx = tabPageFraction.value.roundToInt()

@@ -33,7 +33,7 @@ class BirdsFlockRenderSourceGateTest {
     private fun sourceRoot(): File {
         var dir = File(System.getProperty("user.dir"))
         repeat(6) {
-            val cand = File(dir, "app/src/main/java/com/nasmusic/tv/visualizer/renderers")
+            val cand = File(dir, "app/src/main/java/com/lnh/nasmusictv/visualizer/renderers")
             if (cand.isDirectory) return cand
             dir = dir.parentFile ?: return@repeat
         }

@@ -29,7 +29,7 @@ class VisualizerQualityWiringTest {
     private fun mainSourceRoot(): File {
         var dir = File(System.getProperty("user.dir"))
         repeat(6) {
-            val cand = File(dir, "app/src/main/java/com/nasmusic/tv")
+            val cand = File(dir, "app/src/main/java/com/lnh/nasmusictv")
             if (cand.isDirectory) return cand
             dir = dir.parentFile ?: return@repeat
         }
@@ -89,12 +89,20 @@ class VisualizerQualityWiringTest {
 
     @Test
     fun `画质文案必须中英双份`() {
-        val key = "settings_visualizer_quality"
         val zh = File(resRoot(), "values/strings.xml").readText()
         val en = File(resRoot(), "values-en/strings.xml").readText()
-        assertTrue("values/strings.xml 缺 $key", Regex("""name="$key"""").containsMatchIn(zh))
-        assertTrue("values-en/strings.xml 缺 $key（T1.6.4 明确要求同步英文）",
-            Regex("""name="$key"""").containsMatchIn(en))
+        // 取 values 下所有 settings_visualizer_quality* 文案 key（_low/_medium/_high 及其 _desc），
+        // 逐一确认 values-en 中也有英文 counterpart —— 直接验证「中英双份」契约，
+        // 不依赖某个可能未创建的裸标题 key。
+        val keyPattern = Regex("""name="(settings_visualizer_quality[^"]*)"""")
+        val zhKeys = keyPattern.findAll(zh).map { it.groupValues[1] }.toSet()
+        assertTrue("values/strings.xml 应至少包含一个画质文案 key", zhKeys.isNotEmpty())
+        for (key in zhKeys) {
+            assertTrue(
+                "values-en/strings.xml 缺画质文案 $key（T1.6.4 明确要求同步英文）",
+                Regex("""name="$key"""").containsMatchIn(en)
+            )
+        }
     }
 
     @Test

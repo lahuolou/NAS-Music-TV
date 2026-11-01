@@ -135,9 +135,9 @@ class KaraokePickerTvFocusScanTest {
      */
     private fun karaokeSource(): String {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui/components/KaraokePlaybackScreen.kt"),
-            File("app/src/main/java/com/nasmusic/tv/ui/components/KaraokePlaybackScreen.kt"),
-            File("../app/src/main/java/com/nasmusic/tv/ui/components/KaraokePlaybackScreen.kt"),
+            File("src/main/java/com/lnh/nasmusictv/ui/components/KaraokePlaybackScreen.kt"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui/components/KaraokePlaybackScreen.kt"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui/components/KaraokePlaybackScreen.kt"),
         )
         val found = candidates.firstOrNull { it.isFile }
         assertNotNull(

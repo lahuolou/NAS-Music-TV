@@ -231,7 +231,7 @@ class RendererBaseContractTest {
     @Test
     fun `⑥ 基类三个模板方法必须显式 final（防止有人去掉 final）`() {
         val src = mainSourceRoot()
-            .resolve("com/nasmusic/tv/visualizer/renderers/RendererFx.kt")
+            .resolve("com/lnh/nasmusictv/visualizer/renderers/RendererFx.kt")
             .readText()
         val clean = stripComments(src)
         for (m in listOf("draw", "onEnter", "onExit")) {
@@ -319,7 +319,7 @@ class RendererBaseContractTest {
         val out = LinkedHashMap<String, String>()
         val classHead = Regex("""(?m)^\s*(?:(?:internal|open|abstract|private|sealed|final)\s+)*class\s+(\w+)""")
         for (sub in listOf("renderers", "photo")) {
-            val dir = mainSourceRoot().resolve("com/nasmusic/tv/visualizer/$sub")
+            val dir = mainSourceRoot().resolve("com/lnh/nasmusictv/visualizer/$sub")
             if (!dir.isDirectory) continue
             dir.walkTopDown()
                 .filter { it.isFile && it.extension == "kt" }

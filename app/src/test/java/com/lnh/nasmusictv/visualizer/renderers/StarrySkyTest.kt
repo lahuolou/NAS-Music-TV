@@ -1041,7 +1041,7 @@ class StarrySkyTest {
         assertTrue("必须出现在可选列表里", VisualizerTheme.selectable(true).contains(t))
         // 工厂分支存在（穷举 when 的完备性：每个枚举都有分支）
         val factorySrc = stripComments(
-            readMain("com/nasmusic/tv/visualizer/VisualizerRendererFactory.kt"),
+            readMain("com/lnh/nasmusictv/visualizer/VisualizerRendererFactory.kt"),
         )
         assertTrue("工厂必须 import 渲染器", factorySrc.contains("import com.lnh.nasmusictv.visualizer.renderers.StarrySkyRenderer"))
         assertTrue(
@@ -1119,7 +1119,7 @@ class StarrySkyTest {
         )
         assertTrue("必须用继承的 rng 抽柱方位角", funBody(body, "onEnterContent").contains("rng.next()"))
         // 类头：必须继承 RendererFx（RendererBaseContractTest 的扫描锚点）
-        val raw = readMain("com/nasmusic/tv/visualizer/renderers/StarrySkyRenderer.kt")
+        val raw = readMain("com/lnh/nasmusictv/visualizer/renderers/StarrySkyRenderer.kt")
         assertTrue("类头必须是 class StarrySkyRenderer : RendererFx()", raw.contains("class StarrySkyRenderer : RendererFx()"))
     }
 
@@ -1730,7 +1730,7 @@ class StarrySkyTest {
     /** 整份源文件（**已剥注释**）—— 禁物扫描面比类体更严（含类 KDoc）。 */
     private fun codeOfE42File(): String = stripComments(readSrc())
 
-    private fun readSrc(): String = readMain("com/nasmusic/tv/visualizer/renderers/StarrySkyRenderer.kt")
+    private fun readSrc(): String = readMain("com/lnh/nasmusictv/visualizer/renderers/StarrySkyRenderer.kt")
 
     private fun readMain(rel: String): String = File(mainSourceRoot(), rel).readText()
 

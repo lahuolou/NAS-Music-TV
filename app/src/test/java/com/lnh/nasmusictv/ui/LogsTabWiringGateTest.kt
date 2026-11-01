@@ -537,9 +537,9 @@ class LogsTabWiringGateTest {
 
     private fun mainSource(relativePath: String): String {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/$relativePath"),
-            File("app/src/main/java/com/nasmusic/tv/$relativePath"),
-            File("../app/src/main/java/com/nasmusic/tv/$relativePath"),
+            File("src/main/java/com/lnh/nasmusictv/$relativePath"),
+            File("app/src/main/java/com/lnh/nasmusictv/$relativePath"),
+            File("../app/src/main/java/com/lnh/nasmusictv/$relativePath"),
         )
         val found = candidates.firstOrNull { it.isFile }
         assertTrue(

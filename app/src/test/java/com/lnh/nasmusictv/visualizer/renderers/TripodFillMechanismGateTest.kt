@@ -24,7 +24,7 @@ import java.io.File
 internal class TripodFillMechanismGateTest {
 
     private fun rendererSource(): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/TripodFogRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/TripodFogRenderer.kt").readText()
 
     /** 取函数体（剥注释后大括号配对），写法类断言只能对**真实代码**判。 */
     private fun functionBody(name: String): String {

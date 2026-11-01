@@ -57,20 +57,8 @@ fun KaraokeLyricsView(
     isPlaying: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    // 手机紧凑模式：恢复原始密度，保持歌词字号不被全局缩放
-    if (com.lnh.nasmusictv.ui.theme.LocalPhoneCompact.current) {
-        val baseDensity = androidx.compose.ui.platform.LocalDensity.current
-        androidx.compose.runtime.CompositionLocalProvider(
-            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
-                density = baseDensity.density * com.lnh.nasmusictv.ui.theme.CompactSizes.LYRICS_RECOVER_SCALE,
-                fontScale = baseDensity.fontScale
-            )
-        ) {
-            KaraokeLyricsViewInner(lyrics, progressMs, isPlaying, modifier)
-        }
-    } else {
-        KaraokeLyricsViewInner(lyrics, progressMs, isPlaying, modifier)
-    }
+    // TV-only：移除手机紧凑模式的密度恢复分支，统一走 TV 卡拉 OK 歌词排版（两分支原本等价）。
+    KaraokeLyricsViewInner(lyrics, progressMs, isPlaying, modifier)
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -139,7 +127,7 @@ private fun KaraokeLyricsViewInner(
         horizontalAlignment = Alignment.Start
     ) {
         // 手机紧凑模式使用更小字号，保证两行歌词在窄屏上都能放下
-        val lineFontSize = if (com.lnh.nasmusictv.ui.theme.LocalPhoneCompact.current) 34.sp else 50.sp
+        val lineFontSize = 50.sp
         // 顶部槽位：偶数索引行 -> 黄色平滑推进；奇数索引行 -> 白色预览（下一句）
         topLine?.let { line ->
             val progress = if (onTopIsCurrent) {

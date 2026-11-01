@@ -59,7 +59,6 @@ enum class SearchType {
         private val baiduService: BaiduNetdiskService?,
         private val jamendoService: JamendoService?,
         private val localMusicRepository: LocalMusicRepository? = null,
-        private val isTVDevice: Boolean = false,
         /**
          * M7（§5.2）：本地音乐总开关。**suspend provider** 形态（D4：不能传构造时
          * 快照，开关翻转后下一次搜索立即生效）；每次搜索实时读 DataStore
@@ -155,7 +154,7 @@ enum class SearchType {
             val backendAdapter = backendRegistry?.getAdapter()
             if (MusicSourceType.NAS in sources && backendAdapter != null) {
                 try {
-                    if (isPinyinQuery && nasLocalSongs.isNotEmpty() && isTVDevice) {
+                    if (isPinyinQuery && nasLocalSongs.isNotEmpty()) {
                         // 拼音搜索：NAS 服务端不认拼音，改用本地缓存 + 客户端拼音匹配
                         nasLocalSongs.filter { song ->
                             matchesBySearchType(song, keyword, searchType)
@@ -206,14 +205,14 @@ enum class SearchType {
         val baiduDeferred = async {
             if (MusicSourceType.BAIDU_PAN in sources && baiduService != null) {
                 try {
-                    if (isPinyinQuery && baiduLocalSongs.isNotEmpty() && isTVDevice) {
+                    if (isPinyinQuery && baiduLocalSongs.isNotEmpty()) {
                         // 拼音搜索：百度网盘服务端不认拼音，改用本地索引缓存 + 客户端拼音匹配
                         baiduLocalSongs.filter { song ->
                             matchesBySearchType(song, keyword, searchType)
                         }.map { song ->
                             RankedSong(song = song, source = MusicSourceType.BAIDU_PAN)
                         }
-                    } else if (isPinyinQuery && isTVDevice) {
+                    } else if (isPinyinQuery) {
                         // 拼音搜索但无本地索引缓存，返回空（用户搜中文时百度结果正常返回）
                         emptyList()
                     } else {
@@ -264,7 +263,7 @@ enum class SearchType {
         val localDeferred = async {
             if (MusicSourceType.LOCAL in sources && localMusicRepository != null && localMusicEnabled()) {
                 try {
-                    if (isPinyinQuery && localDeviceSongs.isNotEmpty() && isTVDevice) {
+                    if (isPinyinQuery && localDeviceSongs.isNotEmpty()) {
                         // 拼音搜索：本地源 Room LIKE 查询不认拼音，改用客户端过滤
                         localDeviceSongs.filter { song ->
                             matchesBySearchType(song, keyword, searchType)
@@ -302,23 +301,18 @@ enum class SearchType {
 
         // 精细过滤（搜索页）：按 searchType 维度匹配
         // 中文输入走子串匹配，拼音输入走拼音匹配，互不干扰
-        // 仅 TV 端启用拼音匹配（手机端触屏输入汉字方便，无需拼音）
+        // TV 是唯一完整播放客户端，拼音匹配为主路径（手机仅作浏览器遥控输入）
         val filtered = if (filterMode == FilterMode.PRECISE) {
             val k = keyword.trim().lowercase()
 
-            // 仅 TV 设备且需要拼音匹配时，提前生成拼音缓存
-            val pinyinCache = if (isTVDevice) {
-                SongWithPinyin.fromSongs(allResults.map { it.song })
-            } else {
-                emptyMap()
-            }
+            // 提前生成拼音缓存（拼音输入命中）
+            val pinyinCache = SongWithPinyin.fromSongs(allResults.map { it.song })
 
             allResults.filter { ranked ->
                 matchesBySearchTypePrecise(
                     song = ranked.song,
                     keyword = k,
                     searchType = searchType,
-                    isTVDevice = isTVDevice,
                     pinyinCache = pinyinCache
                 )
             }
@@ -392,7 +386,6 @@ enum class SearchType {
         song: Song,
         keyword: String,
         searchType: SearchType,
-        isTVDevice: Boolean,
         pinyinCache: Map<String, SongWithPinyin>
     ): Boolean {
         if (keyword.isBlank()) return false
@@ -400,10 +393,7 @@ enum class SearchType {
         // 1. 按 searchType 维度的子串匹配
         if (matchesSubstringBySearchType(song, keyword, searchType)) return true
 
-        // 2. 非 TV 设备：仅子串匹配
-        if (!isTVDevice) return false
-
-        // 3. 拼音匹配（按 searchType 维度）
+        // 2. 拼音匹配（按 searchType 维度，TV 主路径）
         val pinyin = pinyinCache[song.id] ?: SongWithPinyin(song)
         return matchesPinyinBySearchType(pinyin, keyword, searchType)
     }

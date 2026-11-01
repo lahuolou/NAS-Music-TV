@@ -56,6 +56,19 @@
 -keep class org.jaudiotagger.** { *; }
 -dontwarn org.jaudiotagger.**
 
+# SLF4J（jcifs-ng 传递引入 slf4j-api:1.7.36）—— ⛔ 2026-11-01 修复 release 构建失败。
+# 症状：`assembleRelease` 在 `:app:minifyReleaseWithR8` 报错
+#   `ERROR: R8: Missing class org.slf4j.impl.StaticLoggerBinder`
+#   （referenced from: void org.slf4j.LoggerFactory.bind() and 3 other contexts）
+# 根因：slf4j-api 1.7.36 通过反射查找 `org.slf4j.impl.StaticLoggerBinder` 绑定实现类，
+# 而 Android 端没有 slf4j binding 实现（也不需要——业务代码零直接使用 slf4j，
+# 仅 jcifs-ng 内部用于日志），R8 视其为缺失类而中止构建。
+# 该缺陷为**预存**（与 2026-11-01 的 TV-only 改造无关）：在原始提交 06f1c76 上
+# 复现同样报错，此前 CI 的 build job 因签名 fail-fast 提前退出而从未暴露。
+# 处置：按 R8 自身生成的 missing_rules.txt 建议忽略该缺失类。
+# ⚠️ 若将来引入真正的 slf4j binding（如 logback-android），需删掉此条并改用对应 keep 规则。
+-dontwarn org.slf4j.**
+
 # 音乐可视化（visualizer 包）——20 套渲染器经 VisualizerRendererFactory 按枚举名创建，
 # 且 AudioFrame/CoverPalette 参与跨层引用；枚举名会持久化到 DataStore（visualizer_theme /
 # visualizer_quality）。R8 收缩枚举常量或重命名后会导致主题解析失败 / 渲染器创建失败。

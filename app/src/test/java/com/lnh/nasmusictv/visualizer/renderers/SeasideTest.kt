@@ -737,7 +737,7 @@ class SeasideTest {
 
     // ══════════════════════════════ 源码定位 ══════════════════════════════
 
-    private fun readSrc(): String = readMain("com/nasmusic/tv/visualizer/renderers/SeasideRenderer.kt")
+    private fun readSrc(): String = readMain("com/lnh/nasmusictv/visualizer/renderers/SeasideRenderer.kt")
 
     private fun readMain(rel: String): String = File(mainSourceRoot(), rel).readText()
 

@@ -247,7 +247,7 @@ enum class PhotoTransitionId(
          *
          * ⛔ 目前**没有历史名映射**（本枚举只增不改名）。日后若重命名任何常量，
          * 必须在此加映射 —— 否则老备份里的旧名只能走 `BackupGson` 的第 ③ 级回落
-         * （首个常量），迁移结果未必正确。见 `docs/technical-overview.md` §10.172。
+         * （首个常量），迁移结果未必正确。见 `docs/archive/technical-overview-changelog.md` §10.172。
          */
         fun fromKey(key: String?): PhotoTransitionId =
             entries.find { it.name == key } ?: Default

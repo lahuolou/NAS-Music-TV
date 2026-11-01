@@ -264,9 +264,9 @@ class SettingsGroupCoverageTest {
     /** main 源集根目录（G7-D 扫全树，不是只扫 `ui/screens/settings/`）。 */
     private fun mainKotlinRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue("找不到 main 源集目录（user.dir=${File("").absolutePath}）", found != null)
@@ -636,9 +636,9 @@ class SettingsGroupCoverageTest {
 
     private fun settingsRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui/screens/settings"),
-            File("app/src/main/java/com/nasmusic/tv/ui/screens/settings"),
-            File("../app/src/main/java/com/nasmusic/tv/ui/screens/settings"),
+            File("src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue("找不到设置源码目录（user.dir=${File("").absolutePath}）", found != null)

@@ -5,6 +5,27 @@
 
 ---
 
+## ✅ 执行状态（源码审计版方案，2026-11-01）
+
+> 本清单是较早的「手机版放弃」规划；实际执行以用户提供的《NASMusicTV-TV单平台与手机遥控保留-源码审计版改造方案.md》为准，且已**一次性完成全部阶段（1 / 2 / B / D / E / F / 5）**。
+>
+> **验证状态（2026-11-01 更新）**：下列状态已由**源码 grep + 编译 + 单测**三方核对 —— `:app:assembleDebug` **BUILD SUCCESSFUL（0 警告）**、`:app:testDebugUnitTest` **2427 测试 / 0 失败 / 0 错误**，`tv5`（Android TV / android-22）模拟器装包并运行成功。
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| ① 移除 `portraitTouchTarget` 包裹 | ⏸ 有意保留 | 恒等函数，约 20 处调用 + `<600dp` 窄窗 TV 仍需（方案 §5.1） |
+| ② 移除 `responsiveDialogSize` 包裹 | ⏸ 有意保留 | 同上，约 14 个 Dialog 调用 |
+| ③ 删 `adaptiveColumnsOf` 的 `phonePortrait` 形参 | ⏸ 有意保留 | 形参名保留，`<600dp` 分支保留 |
+| ④ 去 `CompactSizes.PHONE_UI_SCALE`(0.82) | ✅ 已完成 | UiMode 塌缩为仅 TV 时一并移除（验收 grep 清零） |
+| ⑤ 简化 `MainActivity` 手机分支 | ⏸ 保留 | `isTVDevice()` 仍作布局判据保留，未删 |
+| ⑥⑦ `UiMode` / `LocalPhoneCompact` 收敛 | ✅ 已完成 | 枚举塌缩为仅 TV，验收 grep `LocalPhoneCompact` 清零 |
+| ⑩ 照片墙「仅手机」来源 | ✅ 已完成 | 见下方 ⑩ 更新 |
+| 遥控服务（RemoteControlServer 等） | ✅ 保留未删 | 阶段 E/F 明确禁止误删 |
+
+> 详细说明见 `docs/changes/2026-11-01-tv-only-phone-remote-cleanup.md`。
+
+---
+
 ## 0. 前置判断：两种「手机」必须分清
 
 代码库里「手机」一词有两种**完全不同的含义**，清理时只能动第一种，第二种必须保留：
@@ -93,9 +114,11 @@
 
 ### ⚠️ 暂缓、需先确认（不要自动删）
 
-#### ⑩ 照片墙「仅手机」来源
+#### ⑩ 照片墙「仅手机」来源 —— ✅ 已处理（源码审计版方案阶段 2，2026-11-01）
 - 涉及：`MediaStorePhotoSource`、`ExternalFilePhotoSource` 的 SAF/手机分支、`SafDirectoryPolicy`、`PhotoDedup` 注释里的「手机」。
-- TV 照片墙实际靠 U 盘/SD/Jellyfin。需先确认 `MediaStorePhotoSource` 在 TV 路径上是否真被接线；若为手机独占，再单独评估移除。**本项暂不处理。**
+- **处理动作**：删除 `MediaStorePhotoSource.kt`；移除 `VisualizerViewModel` / `PhotoWallController` 接线、`PhotoWallSettingsSection` 的「图库」开关 UI、`AndroidManifest.xml` 两条手机图片权限（`READ_MEDIA_IMAGES` / `READ_MEDIA_VISUAL_USER_SELECTED`）。
+- **保守保留**（兼容旧备份 / `gallery:<id>` 缓存解码）：`PhotoSourceKind.GALLERY` 枚举值、`photoWallGalleryEnabled` 字段、`PhotoWallAccessPolicy` gallery 函数、`PermissionHelper` 照片 API、`VisualizerViewModel` 的 `GALLERY_*` 通知枚举与回滚函数。深删需 SDK 环境重编译并同步 gallery 测试。
+- TV 照片墙现仅「外接存储 / Jellyfin」两来源。
 
 ---
 

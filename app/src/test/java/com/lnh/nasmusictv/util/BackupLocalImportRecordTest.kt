@@ -156,7 +156,7 @@ class BackupLocalImportRecordTest {
             assertFalse("占位符没被替换（少传参数）：$rendered", rendered.contains("%1"))
         }
         // 只有本地导入那条用带文件名的文案，且必须真的把文件名传进去
-        val vm = sourceFile("java/com/nasmusic/tv/ui/viewmodel/BackupViewModel.kt").readText(Charsets.UTF_8)
+        val vm = sourceFile("java/com/lnh/nasmusictv/ui/viewmodel/BackupViewModel.kt").readText(Charsets.UTF_8)
         assertTrue(
             "BackupViewModel 没把显示名传给 backup_restored_from_file",
             Regex("""getString\(\s*R\.string\.backup_restored_from_file\s*,\s*fileName\s*\)""").containsMatchIn(vm)

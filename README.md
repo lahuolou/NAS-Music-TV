@@ -1,208 +1,138 @@
-# NAS-Music-TV
+# NAS Music TV
 
-一款开源的 **Android TV 音乐播放器**（同一 APK 亦可运行于手机 / 平板）：聚合 NAS（Jellyfin / Navidrome / Subsonic / 道理鱼 / 飞牛）、WebDAV / SMB 网络共享、网络音乐、百度网盘、本地音乐等多音乐源，支持逐字卡拉 OK 歌词、K 歌伴奏、MTV 音乐视频、天气电台等电视专属体验，完整适配遥控器 D-Pad 焦点操作。
+> 安卓 **TV 端**音乐播放器（包名 `com.lnh.nasmusictv`）。用遥控器在大屏电视上听 NAS / 网盘 / 流媒体音乐，支持本地曲库、MV、K 歌、音乐可视化，并可用手机或电脑浏览器**扫码反向遥控**。
 
+- **形态**：仅 Android TV，强制横屏（`sensorLandscape`，已无竖屏/手机客户端代码）；`minSdk=22`（Android 5.1）/ `targetSdk=34` / `compileSdk=34`
+- **技术栈**：100% **Jetpack Compose for TV**（非 Leanback Presenter）；播放基于 **AndroidX Media3 / ExoPlayer**
+- **手机不是客户端，而是遥控器**：App 在部分模式下启动内嵌 HTTP 服务并展示二维码，手机/电脑浏览器扫码即可控制
 
+---
 
-![Release](https://img.shields.io/github/v/release/lahuolou/NAS-Music-TV?color=blue\&label=Release)
+## 它能做什么
 
-> ⚠️ 
->
-> **百度网盘目录限制**
->
-> ：根据百度开放平台 2026 年沙盒策略，第三方应用只能访问 
->
-> `/apps/NAS-Music-TV`
->
->  目录及其子目录，
->
-> **无法读取该目录之外的任何文件**
->
-> 。请将音乐文件放入百度网盘的 
->
-> `/apps/NAS-Music-TV/`
->
->  目录下（例如 
->
-> `/apps/NAS-Music-TV/音乐/`
->
-> ），应用内首次使用时会自动创建该目录。放在 
->
-> `/apps/NAS-Music-TV/`
->
->  之外的文件将无法被本应用访问。
+### 媒体源（统一封装在 `BackendAdapter`）
+| 类型 | 适配器 | 协议 |
+|------|--------|------|
+| Jellyfin | `JellyfinAdapter` | Jellyfin REST |
+| Navidrome | `NavidromeAdapter` | Subsonic 兼容 API |
+| Subsonic | `SubsonicAdapter` | Subsonic `/rest/`（兼容 Navidrome/lx-server/Airsonic） |
+| 飞牛 fnOS | `FeiniuAdapter` | fnOS music API v1 |
+| 岛鲤鱼 | `DaoliyuAdapter` | 自定义 REST（社区后端，端点为反推） |
+| WebDAV | `WebDavAdapter` | WebDAV（Basic Auth） |
+| SMB | `SmbAdapter` | **SMB2/SMB3**（jcifs-ng，SMB1 禁用） |
+| 百度网盘 | `BaiduNetdiskService` | OAuth2 + 流式播放（非 `BackendAdapter`） |
+| 本地存储 | `LocalMusic*` | USB / SD / 外接存储扫描，Room 持久化 |
 
-## 功能特性
+### 网络音乐（非 NAS，`NetworkMusicManager` 多源路由）
+- **Meting 聚合**（网易/QQ/酷狗…）— 默认 `https://meting.mikus.ink/api`，多码率 + 可播探测
+- **网易云**原生免鉴权接口（失败回落 Meting）
+- **Jamendo** CC 独立音乐（官方 API v3）
+- **Bilibili MV**（`BilibiliMvService`，三步取流 + Referer 防盗链）
 
-### 多音乐源
+### 播放能力（`player/`）
+- Media3/ExoPlayer；**多码率**（全局默认 + 单曲覆盖）、**交叉淡入**、**睡眠定时**
+- **均衡器 + FFT 频谱**（`PlayerEqualizer` / `SpectrumAnalyzer`）
+- **离线下载与下载后播放**（`backend/download/`，串行队列 + 重试 + 崩溃恢复 + ID3 标签/内嵌封面/歌词写入）
+- **歌词**：LRC（含逐字 `<mm:ss.xx>` 高亮）+ 酷狗/网易网络歌词 + 本地侧车/内嵌 ID3
+- **K 歌人声分离**：HT-Demucs FT ONNX（`DemucsSeparator`，vocals / accompaniment 双轨），模型经设置页下载
+- **Android Auto / 车机**：`PlaybackService` 实现 `MediaLibraryService` + `MEDIA_PLAY_FROM_SEARCH` 语音起播
 
+### 可视化（`visualizer/`，26 套主题）
+- 以 **Compose `Canvas` 过程化绘制**为主；两例用 WebView（`WorldGlobeRenderer`、`MoonlitRenderer`）
+- 音频源来自播放器的频谱（`SpectrumRepository`），含节拍检测
+- 画质分级 `VisualQuality`（HIGH/MEDIUM/LOW）按设备过滤可用主题
+- 照片墙是其中一个主题（`PHOTO_WALL`）：EXTERNAL（USB/SD/SAF）+ Jellyfin 来源，**YuNet 人脸检测 ONNX** 已接入
 
+### 反向遥控（`net/`，NanoHTTPD，端口 18080–18085）
+| 端口 | 服务 | 用途 | 启动时机 |
+|------|------|------|----------|
+| 18080 | `LocalInputServer` | 手机扫码向 TV 输入框推送文字 | 打开输入对话框时 |
+| 18081 | `BackupTransferServer` | 备份/恢复传输 | 按需 |
+| **18082** | `RemoteControlServer` | 手机/PC 浏览器遥控（队列/搜索加歌） | **进入 K 歌 / MTV 模式时** |
+| 18083 | `ModelTransferServer` | 人声分离模型传输 | 按需 |
+| 18084 | `PlaylistUploadServer` | 歌单上传 | 按需 |
+| 18085 | `ServerConfigTransferServer` | 服务器配置传输 | 按需 |
 
-* **NAS**：Jellyfin / Navidrome / Subsonic / 道理鱼 / 飞牛 五种后端，含 CUE 整轨与 HLS 流媒体
+安全：原绑 `0.0.0.0` 无鉴权，现改为**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换。本地 IP 经 `util/NetworkUtils.getLocalIpAddress()` 选取（避开模拟器 NAT，优先局域网段）。
 
-* **WebDAV / SMB**：网络共享目录浏览与播放，直接对接 NAS 上的 WebDAV / SMB 共享（SMB 支持 HTTP 流式播放）
+### 其它
+- **电台**：公共电台目录（标签筛选、直播流即点即播）；**天气电台**：按实时天气匹配心情电台
+- **歌单导入**：M3U / 网易云 / JSON / TXT（`backend/playlist/`）
+- **导出**：经 SAF `OpenDocumentTree` 导出到外接设备（`backend/export/`）
+- **数据持久化**：3 个 Room 库（本地音乐 `local_music.db` v3、下载 `downloads.db` v3、人脸 `photo_face.db` v1）＋ DataStore Preferences（统一替代 SharedPreferences）
 
-* **网络音乐**：在线搜索与播放，5 档音质（自动 / 128 / 192 / 320 / 无损 FLAC），档位不可用时自动降级；搜索命中艺人时可续页取该艺人的全部作品
+---
 
-* **本地音乐**：自动扫描设备与 USB / SD 卡，Room 索引持久化，增量扫描识别新增 / 更新 / 删除，与 NAS 音乐同一视图浏览
+## 工程结构
 
-* **百度网盘**：设备码 OAuth 授权，目录浏览、搜索、直链串流
+```
+app/src/main/java/com/lnh/nasmusictv/
+├── backend/        # 数据源：impl/(NAS 后端) · network/(流媒体) · local/(本地扫描) · files/(SMB/WebDAV) · download/ · export/ · photo/ · playlist/
+├── player/         # Media3 播放状态机、PlaybackService、均衡器/频谱、人声分离
+├── lyrics/         # LRC/逐字解析、歌词获取优先级
+├── visualizer/     # 25+ 渲染主题 + 频谱数据
+├── ui/             # Compose TV 界面：screens/ · components/ · viewmodel/ · theme/
+├── net/            # 6 个 NanoHTTPD 内嵌服务器 + SMB 回环桥
+├── data/           # 模型(Screen 枚举) · prefs/DataStore · model/
+├── util/           # NetworkUtils 等
+└── NasMusicApp.kt  # Application，手动 DI 容器（无 Hilt/Dagger）
+```
 
-* **独立音乐（Jamendo）**：CC 授权音库，热门榜 + 风格筛选
+导航**不是** Jetpack Navigation，而是 `data/model/Screen.kt` 的 14 个枚举页 + `MainViewModel` 的 `StateFlow` 驱动 `AppRoot` 的 `when` 分支直接组合。
 
-* **电台**：公共电台目录，标签筛选，直播流即点即播
+### 主要界面
+首页(Home) · 正在播放(NowPlaying) · 音乐库(Library：发现/搜索/电台/Jamendo/浏览) · 我的(Mine) · 播放队列(Queue) · 设置(Settings) · 服务器连接(ServerConnect) · 专辑/艺人详情 · 均衡器 · 歌单管理 · 网盘(Netdisk) · 天气电台(WeatherRadio) · 播放统计(PlayStats)；叠加层：可视化 / K 歌 / MTV。
 
-* **跨源搜索**：NAS / 网络 / 百度 / Jamendo 四源独立开关，并行搜索合并去重
-
-### 播放体验
-
-
-
-* **播放控制**：顺序 / 单曲循环 / 列表循环 / 随机四种模式，队列增删改与排序，队列持久化（重启自动恢复）
-
-* **音质**：播放页显示当前档位或真实码率，网络歌曲可随时切换档位，支持单曲指定档位
-
-* **应用内音量**：独立于系统音量（0–100%），设置页与播放页均可调节，跨曲交叉淡入自动适配
-
-* **均衡器与可视化**：均衡器预设与频段调节；全屏沉浸式可视化 30+ 套特效（含 three-globe 3D 地球版「世界」，WebView + WebGL 完全离线渲染，参考 [three-globe](https://github.com/vasturiano/three-globe) 与 [three.js](https://github.com/mrdoob/three.js)）；可视化画质可按设备性能分低 / 中 / 高三档选择
-
-* **照片墙可视化**：图库 / 外接存储（U 盘、SD 卡）/ Jellyfin 三来源照片全屏轮播，43 种转场随机切换，可选「仅显示含人像」
-
-* **K 歌**：人声消除伴奏模式、原唱 / 伴奏切换、升降调、播放变速
-
-* **MTV 音乐视频**：播放页一键进入全屏 MV（B 站搜索），切歌自动预搜
-
-* **天气电台**：按实时天气（晴 / 雨 / 雪 / 风 / 阴 / 夜晚）从曲库匹配心情电台，无 NAS 也可用
-
-* **播放统计**：记录播放次数与最后播放时间，驱动「最近播放」
-
-### 歌词
-
-
-
-* 逐行滚动 + **逐字高亮**（卡拉 OK 效果），大屏适配
-
-* 多来源获取：内嵌 / 本地 LRC / 网络匹配 / 缓存，可切换来源
-
-* 字号缩放与高亮模式记忆
-
-### 曲库浏览
-
-
-
-* 搜索：拼音首字母（`zjl` → 周杰伦）+ 子串匹配
-
-* 发现页：语种 / 纯音乐 / 年代 / 情怀 / 风格 / 主题六维度筛选
-
-* 专辑 / 艺术家 / 流派 / 年代 网格浏览与详情页
-
-* 收藏、最近播放、自建播放列表
-
-* 歌单导入：M3u / 网易云 / JSON / TXT，歌单内 HTTP 直链可直接播放
-
-### TV 体验
-
-
-
-* 完整 D-Pad 焦点体系与遥控器优化，支持 HDMI-CEC 媒体键
-
-* **播放页沉浸模式**：5 秒无操作自动隐藏控制栏，任意遥控键唤醒并焦点落回「播放 / 暂停」
-
-* **手机遥控**：K 歌 / MTV 全屏页显示二维码，手机扫码后可查看队列、搜索添加歌曲
-
-* 前台媒体通知与锁屏控制
-
-## 界面预览
-
-
-
-* **首页**：当前播放、最近播放、实时天气、均衡器频谱预览
-
-* **播放页**：封面 + 歌词、封面滤镜、进度条与控制按钮、可视化、歌曲详情
-
-* **曲库页**：搜索 / 发现 / 电台 / 专辑 / 艺术家 / 歌曲 / 流派 / 年代
-
-* **详情页**：专辑与艺术家详情，歌曲列表 + 播放全部
-
-* **队列页**：播放队列管理
-
-* **我的页**：收藏 + 最近播放 + 本地歌单
-
-* **设置页**：主题、动画、播放模式、缓存、均衡器、歌词缩放、封面滤镜、天气 API Key、各音乐源端点
-
-* **连接页**：五种 NAS 后端 + WebDAV / SMB，默认端口自动切换
-
-* **关于页**：后端类型 + API 版本号 + 连接状态
+---
 
 ## 构建与运行
 
+### 环境要求
+- **JDK 17**（本机用 `C:\Program Files\Java\jdk-17.0.21.0.2`）
+- **Android SDK**（含 platform-34、build-tools）
+- 通过项目自带 Gradle wrapper（`gradlew`）运行，**无需预先安装 Gradle**
 
+### 常用命令
+```bash
+# 调试包（APK：app/build/outputs/apk/debug/NAS-Music-TV-debug-v1-0-0.apk）
+./gradlew :app:assembleDebug
 
-```
-# 设置 JAVA_HOME（以 JDK 17 为例）
-export JAVA_HOME="C:\Program Files\Java\jdk-17.0.21.0.2"
+# 单元测试（纯 JVM，241 个测试文件，含 Robolectric）
+./gradlew :app:testDebugUnitTest
 
-# Debug APK
-./gradlew assembleDebug
-
-# Release APK（需本地 keystore.properties，含 storeFile / storePassword / keyAlias / keyPassword / cryptoPassphrase）
-./gradlew assembleRelease
-
-# 运行测试
-./gradlew test
-
-# 推送到电视（将 192.168.0.116 替换为你的电视 IP）
-adb -s 192.168.0.116:5555 install -r app/build/outputs/apk/debug/app-debug.apk
+# 安装到已连接设备/模拟器
+adb install -r app/build/outputs/apk/debug/NAS-Music-TV-debug-v1-0-0.apk
 ```
 
-## 已知限制
+> ⚠️ 测试 worker 在含中文路径的 `GRADLE_USER_HOME` 下会崩溃（Gradle 已知坑）。本机用 `subst G: C:\Users\内涵哥\.gradle` 后设 `GRADLE_USER_HOME=G:\` 再跑测试可绕开。该坑**不影响 `assembleDebug`**。
 
+### 签名与密钥
+- 百度网盘 `BAIDU_APP_ID/SECRET`、AES 口令 `CRYPTO_PASSPHRASE` 从 **`keystore.properties`**（已 gitignore，不入库）读取，写入 `BuildConfig`
+- `release` 打包前校验 `CRYPTO_PASSPHRASE` 已配置，缺失则 fail-fast（避免换密钥静默发布导致既有凭据无法解密）
+- 无 `keystore.properties` 时 CI 仍可做 debug 构建与测试，仅 release 签名跳过
 
+### ABI
+`arm64-v8a · armeabi-v7a · x86_64 · x86`（含 x86 以便 TV 模拟器调试）
 
-* **电视端照片墙读不到内置存储的照片**（两平台统一只读外接卷 / Jellyfin / 图库）：电视想展示
+---
 
-  手机或电脑里的照片，请拷到 U 盘 / SD 卡插入后，在「设置 → 照片墙 → 外接存储」选择该卷
+## 测试
+- 位置：`app/src/test/`（241 个 Kotlin 测试文件）
+- 框架：**JUnit4 + Robolectric 4.11.1 + Mockito**，OkHttp `mockwebserver`，Room `room-testing`
+- **无 `androidTest`**（无真机/Instrumentation 集成测试，全部为 JVM 单测）
+- 注意：`NasMusicApp` 在 Robolectric 下会真跑 `onCreate` 并读写 Room——这是既定测试模式
 
-* **仅显示含人像**在低画质档不可用（老设备 ARMv7 性能取舍，设置项自动置灰）
+---
 
-* 人脸检测模型与结果库独立于音乐库（`photo_face.db`），「清除人脸结果」只删检测结果、不动照片
+## 文档
+- `docs/technical-overview.md` — 架构总览（模块边界、数据流、外部集成、关键约定）
+- `docs/conventions-adaptive-ui.md` — UI / TV 适配约定（焦点视觉、尺寸/对话框 helper）
+- `docs/changes/` — 历次变更报告
+- `docs/archive/` — 历史方案与计划（快照，保留以供追溯，**不代表当前代码状态**）
 
-## 鸣谢与衍生说明
+---
 
-本项目是 **hxzhang2000 原创&#x20;**[NASMusicTV](https://github.com/hxzhang2000/NASMusicTV)**&#x20;的衍生分支**，保留原版 GPL v3 协议与全部既有功能，在此向原创作者致谢。在原版基础上，本项目进行了以下改动：
-
-### 新增功能
-
-
-
-* **WebDAV / SMB 网络共享音乐源**：新增 `backend/files` 适配层（WebDAV 客户端 / SMB 客户端 / 应用内 loopback HTTP 桥），「服务器连接」页支持 WebDAV 与 SMB / Windows 共享直连 NAS 目录，并提供遥控器可操作的目录浏览器
-
-* **百度网盘开放平台 OAuth 授权编辑框**：「服务器连接」页可配置百度网盘开放平台 OAuth 授权（设备码授权流程，授权凭据可编辑），配合沙盒目录 `/apps/NAS-Music-TV` 使用
-
-* **播放页沉浸隐藏态按键行为**：5 秒无操作隐藏控制栏后，任意遥控键第一次按下仅唤醒并显示控制栏（不误触播放暂停、不呼出面板、不移动焦点），焦点强制落回「播放 / 暂停」键，重新隐藏再唤醒时重复该流程
-
-* **本地音乐增量扫描**：按内容 URI 线性比对识别新增 / 更新 / 删除歌曲，封面缓存按需失效；补齐 `.opus` 文件系统扫描支持
-
-* **配套文档**：`docs/webdav-smb-tv.md`（WebDAV/SMB 实现与边界）、`docs/changes/2026-10-31-*`（播放稳定性 / 封面优化变更记录）、`docs/phone-client-cleanup-checklist.md`（手机端清理改造规划）等
-
-### 优化改进
-
-
-
-* **播放链路稳定性**：协程取消语义修正（取消不再被误报为网络失败）、Future ↔ Job 双向取消、搜索缓存有界 LRU 与单调时钟、随机播放历史统一（`ShuffleHistory`）
-
-* **大曲库封面加载**：封面提取移出主线程（`produceState` + IO 调度）、歌手歌曲增量索引（`ArtistSongIndex`）、封面预取节流与代际取消、封面缓存键含文件时间戳自动失效
-
-* **本地扫描可靠性**：时间单位统一（下载入库毫秒 → Unix 秒）、全量刷新保留未变歌曲的封面缓存
-
-### 移除与弱化
-
-
-
-* **手机端体验弱化**：项目聚焦 Android TV 场景，README 不再宣传手机端布局；手机 UI 代码清理已列入改造规划（见 `docs/phone-client-cleanup-checklist.md`）
-
-* **开发期调试残留**：移除 SeasideRenderer 临时二分调试开关等开发期杂物（行为等价）
-
-## 开源协议
-
-GPL v3
+## 许可与第三方组件
+- 音频元数据读写使用 **jaudiotagger 3.0.1**（LGPL）；项目整体授权以仓库 LICENSE 为准（衍生自 hxzhang2000/NASMusicTV，保留 GPL v3）
+- 人声分离模型 **HT-Demucs**（MIT）；人脸检测 **YuNet**（OpenCV Zoo，Apache-2.0），均经 ONNX Runtime 1.17.1 推理
+- 详细依赖见 `app/build.gradle.kts`

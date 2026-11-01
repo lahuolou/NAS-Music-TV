@@ -33,7 +33,7 @@ import kotlin.math.hypot
  * | 五角星 | ≈ 2240（内径只有 0.45 倍 ⇒ 凹口方向需要更大） |
  *
  * ⇒ 菱形 / 五角星（以及 `SHAPE_RANDOM` 抽到它们时）用 `diagonalHalf` 会**露旧图**
- * （2026-09-24 上机复验，见 `docs/technical-overview.md` §10.182）。
+ * （2026-09-24 上机复验，见 `docs/archive/technical-overview-changelog.md` §10.182）。
  *
  * ## 自证
  *

@@ -337,7 +337,7 @@ class PlaybackService : MediaLibraryService() {
                  * F2-2b：自定义按钮（播放模式/睡眠定时）经 SessionCommand 下发。
                  *
                  * ⛔ **本方法绝不能 `reject()`** —— 这是 「车机蓝牙按键全部失效」的根因
-                 * （见 `docs/technical-overview.md` §10.165）。系统侧（蓝牙 AVRCP / SystemUI / 车机）
+                 * （见 `docs/archive/technical-overview-changelog.md` §10.165）。系统侧（蓝牙 AVRCP / SystemUI / 车机）
                  * 走的是**框架** `android.media.session.MediaController`，该链路在 Media3 里必然
                  * 经过 `MediaSessionLegacyStub.tryGetController()` → 本回调；一旦拒绝，Media3 会
                  * 立即 `onDisconnected` 并**丢弃命令**，暂停/上一曲/下一曲全部静默无效。

@@ -77,7 +77,7 @@ private fun resolveLegacyEnumName(clazz: Class<*>, raw: String): Enum<*>? = when
     //    而 `fromKey()` 未命中时返回 `Default`（= `CROSSFADE`），与第 ③ 级回落
     //    （首个常量 = `CROSSFADE`）结果**完全相同** ⇒ 加不加都得到同一个值。
     //    日后若重命名常量，**必须**把它加进来（否则旧名只能落到首个常量，
-    //    迁移结果未必是期望的那一项）。见 `docs/technical-overview.md` §10.172。
+    //    迁移结果未必是期望的那一项）。见 `docs/archive/technical-overview-changelog.md` §10.172。
     else -> null
 }
 

@@ -33,9 +33,7 @@ import com.lnh.nasmusictv.backend.download.model.DownloadState
 import com.lnh.nasmusictv.data.model.Song
 import com.lnh.nasmusictv.ui.LocalListBackHandler
 import com.lnh.nasmusictv.ui.theme.FontSize
-import com.lnh.nasmusictv.ui.theme.LocalUiMode
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
-import com.lnh.nasmusictv.ui.theme.UiMode
 import com.lnh.nasmusictv.ui.components.BackButton
 import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.MarqueeText
@@ -93,12 +91,10 @@ fun ArtistDetailScreen(
         onDispose { listBackHandler.value = null }
     }
 
-    val isPhoneLandscape = LocalUiMode.current == UiMode.PhoneLandscape
-
     Column(
         modifier = modifier.fillMaxSize().padding(
-            horizontal = if (isPhoneLandscape) 16.dp else 32.dp,
-            vertical = if (isPhoneLandscape) 0.dp else 20.dp
+            horizontal = 32.dp,
+            vertical = 20.dp
         )
     ) {
         // 返回 + 标题行 + 操作按钮 + 歌曲数

@@ -31,9 +31,7 @@ import androidx.tv.material3.Text
 import com.lnh.nasmusictv.R
 import com.lnh.nasmusictv.data.model.EqualizerPreset
 import com.lnh.nasmusictv.ui.theme.Accent
-import com.lnh.nasmusictv.ui.theme.LocalUiMode
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
-import com.lnh.nasmusictv.ui.theme.UiMode
 import com.lnh.nasmusictv.ui.components.BackButton
 import com.lnh.nasmusictv.data.model.VisualizerTheme
 import com.lnh.nasmusictv.ui.components.FocusableSurface
@@ -55,11 +53,10 @@ fun EqualizerScreen(
     visualizerTheme: VisualizerTheme = VisualizerTheme.Default,
     modifier: Modifier = Modifier
 ) {
-    val isPhoneLandscape = LocalUiMode.current == UiMode.PhoneLandscape
     Column(
         modifier = modifier.fillMaxSize().padding(
-            horizontal = if (isPhoneLandscape) 16.dp else 32.dp,
-            vertical = if (isPhoneLandscape) 0.dp else 20.dp
+            horizontal = 32.dp,
+            vertical = 20.dp
         )
     ) {
         // 返回 + 标题

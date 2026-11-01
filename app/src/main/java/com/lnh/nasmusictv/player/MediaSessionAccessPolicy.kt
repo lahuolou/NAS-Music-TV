@@ -13,7 +13,7 @@ import androidx.media3.session.SessionCommands
  * ## 为什么单独抽出来
  *
  * 这段逻辑原先内联在 `PlaybackService.onConnect` 里，**没有单测能覆盖**，
- * 结果一个「拒绝连接」的写法把系统侧全部媒体控制打死了（见 `docs/technical-overview.md` §10.165）。
+ * 结果一个「拒绝连接」的写法把系统侧全部媒体控制打死了（见 `docs/archive/technical-overview-changelog.md` §10.165）。
  * 抽成不依赖 `MediaSession` 实例的纯函数后，`testDebugUnitTest` 能直接断言，
  * 并额外用源码扫描门禁锁住「不得再出现 reject」。
  *
