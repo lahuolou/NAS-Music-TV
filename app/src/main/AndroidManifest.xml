@@ -13,17 +13,9 @@
     -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <!--
-      照片墙「图库」来源（仅手机，§9.3）：Android 13+ 只读图片。
-      ⛔ 必须**由「图库」开关触发**请求，不能照搬 onCreate 里那段无条件请求（§9.4）。
-      ⚠️ 手机端「外接存储」只走 SAF（§6.3 路线 B），**不需要**本权限。
+      照片墙「图库」（MediaStore）来源已随手机客户端下线移除（TV 无系统图库；
+      照片墙改以外接 USB/SD/SAF 与 Jellyfin 为主来源）。相应图片读取权限一并移除。
     -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!--
-      Android 14+「仅选择照片」（§9.6）：不声明**也能用**（系统照样给该选项），
-      但系统会把 App 置于兼容模式、由系统接管「重新选择」；
-      声明后我们才能自控设置页里的「重新选择照片」入口。
-    -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!--
@@ -60,7 +52,7 @@
         </intent>
     </queries>
 
-    <!-- Device features: both TV and phone supported -->
+    <!-- Device features: Android TV -->
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -123,7 +115,7 @@
             android:name="androidx.car.app.TintableAttributionIcon"
             android:resource="@drawable/ic_car_attribution" />
 
-        <!-- Main Activity (supports both TV and phone) -->
+        <!-- Main Activity: Android TV -->
         <!-- （2026-10-28）：**竖屏整体下线，应用强制横屏**。
              · screenOrientation = sensorLandscape —— 允许左右两个横屏方向（翻转设备可跟随），
                但**不再可能进入竖屏**（此前 unspecified 会跟随传感器进竖屏）。

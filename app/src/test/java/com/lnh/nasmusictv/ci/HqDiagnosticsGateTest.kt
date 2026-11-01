@@ -167,9 +167,9 @@ class HqDiagnosticsGateTest {
 
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue(

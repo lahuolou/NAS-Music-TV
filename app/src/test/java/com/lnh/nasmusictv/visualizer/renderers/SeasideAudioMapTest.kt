@@ -450,9 +450,9 @@ class SeasideAudioMapTest {
     private fun readSource(name: String): String {
         var dir = java.io.File(System.getProperty("user.dir"))
         repeat(6) {
-            val f = java.io.File(dir, "app/src/main/java/com/nasmusic/tv/visualizer/renderers/$name")
+            val f = java.io.File(dir, "app/src/main/java/com/lnh/nasmusictv/visualizer/renderers/$name")
             if (f.isFile) return f.readText()
-            val g = java.io.File(dir, "src/main/java/com/nasmusic/tv/visualizer/renderers/$name")
+            val g = java.io.File(dir, "src/main/java/com/lnh/nasmusictv/visualizer/renderers/$name")
             if (g.isFile) return g.readText()
             dir = dir.parentFile ?: return@repeat
         }

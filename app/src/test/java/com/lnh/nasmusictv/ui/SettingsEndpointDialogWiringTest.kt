@@ -208,9 +208,9 @@ class SettingsEndpointDialogWiringTest {
     /** 定位 main 源码根目录（各扫描门各自持一份私有 helper，本项目既有范式）。 */
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertNotNull(

@@ -435,9 +435,9 @@ class ArtistSongsPagingTest {
     /** 与 `ci/LocalMusicGateTest.kt` 同一套路径兜底（user.dir 可能是 app/ 也可能是仓库根） */
     private fun mainSourceFile(relativePath: String): String {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv")
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv")
         )
         val root = candidates.firstOrNull { it.isDirectory }
         assertTrue(

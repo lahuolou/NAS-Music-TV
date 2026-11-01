@@ -23,7 +23,7 @@ import androidx.tv.material3.lightColorScheme
  * 项目级别的颜色系统（与 HTML index.html 中的 CSS 变量一一对应）
  *
  * ⚠️ 主题修复（+）：属性由 `val`（编译期常量）改为 **Compose 可变 State**，
- * 由 [NASMusicTVTheme] 按 darkTheme + 设备同步对应色板（见 [TVDarkPalette]/[AirDarkPalette]/[LightPalette]）。
+ * 由 [NASMusicTVTheme] 按 darkTheme 同步对应色板（见 [TVDarkPalette]/[LightPalette]）。
  * 这样全仓数百处 `NasMusicColors.X` 引用**零改动**即可随开关整体切换 —— 此前它们是
  * 固定深色常量，MaterialTheme 切换覆盖不到，导致「暗色主题开关无反应」。
  *
@@ -70,7 +70,7 @@ object NasMusicColors {
  *   动态取色（若有）只作播放页背景氛围层。
  * - **TV 档**（[TVDarkPalette]）：深净底 + 不透明表面 + 明确描边；焦点态=暗红描边 + 表面轻微提亮，
  *   拒绝大面积高饱和红填充（3 米距离可读性优先）。
- * - **Air 档**（[AirDarkPalette]，手机端）：半透明表面 + 淡边框 + 柔和层级。
+ * - 仅保留 **TV 档**（[TVDarkPalette]）：不透明表面 + 明确描边 + 高对比，适配大屏。
  * 列表页保持深色底，避免红白强对比在 TV 上刺眼。
  */
 private data class NasColorPalette(
@@ -114,26 +114,7 @@ private val TVDarkPalette = NasColorPalette(
     textBrightHighlight = Color(0xFFE25858),
 )
 
-/** 深色 Air 档色板（手机端）：半透明表面（70–77% 不透明度）+ 淡边框，文字对比不降 */
-private val AirDarkPalette = NasColorPalette(
-    background = Color(0xFF0E0F12),
-    surface = Color(0xB317191F),
-    surfaceVariant = Color(0xC417191F),
-    primary = Color(0xFFC22323),
-    primaryVariant = Color(0xFF9E1B1B),
-    secondary = Color(0xFF6190E8),
-    textPrimary = Color(0xFFF2F4F8),
-    textSecondary = Color(0xFF9AA3B2),
-    border = Color(0x3320242C),
-    danger = Color(0xFFF87171),
-    warning = Color(0xFFFBBF24),
-    success = Color(0xFF34D399),
-    focusRing = Color(0xFFC22323),
-    accentGlow = Color(0x14C22323),
-    accentGlowStrong = Color(0x26C22323),
-    primaryBright = Color(0xFFE25858),
-    textBrightHighlight = Color(0xFFE25858),
-)
+// （Air 档色板已随手机 UI 下线移除；TV 统一使用 TVDarkPalette / LightPalette）
 
 /** 浅色色板（亮色主题；品牌暗红保证浅底对比度，与 LightColorScheme 一致） */
 private val LightPalette = NasColorPalette(
@@ -282,7 +263,8 @@ object FontSize {
 @Composable
 private fun adjustedSize(phone: TextUnit, tv: TextUnit): TextUnit {
     val adjustment = LocalFontAdjustment.current
-    val base = if (LocalPhoneCompact.current) phone else tv
+    // TV-only：直接采用 TV 字号。原 phone 分支随手机 UI 下线已无意义；保留参数不变以不破坏调用点。
+    val base = tv
     return if (adjustment == 0) base else (base.value + adjustment).sp
 }
 
@@ -311,7 +293,7 @@ object ButtonColors {
 
 /**
  * 类型系统
- * ⚠️ 色值改用常量色板（TVDarkPalette/AirDarkPalette/LightPalette）构建：顶层 val 只初始化一次，
+ * ⚠️ 色值改用常量色板（TVDarkPalette/LightPalette）构建：顶层 val 只初始化一次，
  * 不能再读可变 [NasMusicColors]（否则首访缓存旧色）；且语义上 scheme 应跟随当前主题。
  */
 private val TVDarkColorScheme = darkColorScheme(
@@ -324,16 +306,7 @@ private val TVDarkColorScheme = darkColorScheme(
     onSurfaceVariant = TVDarkPalette.textSecondary
 )
 
-/** Air 档（手机端）暗色 scheme：半透明表面 + 淡边框 */
-private val AirDarkColorScheme = darkColorScheme(
-    background = AirDarkPalette.background,
-    surface = AirDarkPalette.surface,
-    primary = AirDarkPalette.primary,
-    onPrimary = Color(0xFF000000),
-    onBackground = AirDarkPalette.textPrimary,
-    onSurface = AirDarkPalette.textPrimary,
-    onSurfaceVariant = AirDarkPalette.textSecondary
-)
+// （AirDarkColorScheme 已随手机 UI 下线移除；TV 统一使用 TVDarkColorScheme / LightColorScheme）
 
 private val LightColorScheme = lightColorScheme(
     background = LightPalette.background,
@@ -402,12 +375,9 @@ fun NASMusicTVTheme(
     darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    // 暗底 Air 风格：手机端（LocalPhoneCompact）走 Air 档（半透明表面+淡边框+柔和层级），
-    // TV 端走 TV 档（不透明表面+明确描边+高对比），背景统一深净底 #0E0F12（留白感）。
-    val air = LocalPhoneCompact.current
-    applyPalette(if (darkTheme) (if (air) AirDarkPalette else TVDarkPalette) else LightPalette)
-    val colorScheme = if (!darkTheme) LightColorScheme
-        else if (air) AirDarkColorScheme else TVDarkColorScheme
+    // TV-only：固定使用 TV 档（不透明表面+明确描边+高对比），背景统一深净底 #0E0F12（留白感）。
+    applyPalette(if (darkTheme) TVDarkPalette else LightPalette)
+    val colorScheme = if (!darkTheme) LightColorScheme else TVDarkColorScheme
     // TV 端字号由 FontSize.xx() @Composable 函数返回 +6sp 的 TV 值，无需 fontScale 缩放
     val lyricsTheme = LyricsThemeData(
         currentLine = LyricsTheme.currentLine,
@@ -491,24 +461,7 @@ val LocalLyricsTheme = androidx.compose.runtime.staticCompositionLocalOf {
     )
 }
 
-/**
- * 手机端紧凑 UI 尺度
- *
- * 1080p 手机横屏下整体字号/组件占位过大。通过全局 LocalDensity 缩放实现"一键紧凑"，
- * TV（大屏）不应用。
- *
- * - [PHONE_UI_SCALE]：手机端密度缩放系数（字号 sp 与尺寸 dp 同步缩小）
- * - [LocalPhoneCompact]：标记当前是否为"手机紧凑模式"，供歌词等例外组件恢复原始密度
- */
-object CompactSizes {
-    const val PHONE_UI_SCALE = 0.82f
-
-    /** 歌词恢复系数 = 1 / PHONE_UI_SCALE */
-    const val LYRICS_RECOVER_SCALE = 1.0f / PHONE_UI_SCALE
-}
-
-/** 当前是否处于手机紧凑模式（MainActivity 按设备类型提供） */
-val LocalPhoneCompact = androidx.compose.runtime.staticCompositionLocalOf { false }
+// （手机紧凑 UI 尺度 CompactSizes 已随手机 UI 下线移除；TV 统一使用 TV 字号体系）
 
 /**
  * 当前是否为**暗色主题**（由 `MainActivity` 依 `AppSettings.darkTheme` 提供）。

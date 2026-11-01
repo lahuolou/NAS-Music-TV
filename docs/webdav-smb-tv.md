@@ -52,4 +52,14 @@
 
 ## 本地验证
 
-此源代码包的 `gradle/wrapper/gradle-wrapper.properties` 指向项目维护者 Windows 开发机上的离线 Gradle 包（`file:///D:/tools/gradle-9.5.0-bin.zip`）。这是仓库 `AGENTS.md` 明确要求保留的本地配置；在没有该 Windows 路径的 Linux 容器中无法启动 Gradle Wrapper。当前执行环境也未配置 Android SDK，因此本次只能进行源码静态检查，不能宣称 Android 编译或 TV 真机测试已通过。请在项目原开发环境使用 Android Studio Sync 后执行 `:app:compileDebugKotlin`、单元测试与 TV 真机验证。
+**构建环境**：`gradle/wrapper/gradle-wrapper.properties` 指向项目维护者 Windows 开发机上的离线 Gradle 包（`file:///D:/tools/gradle-9.5.0-bin.zip`）。这是仓库 `AGENTS.md` 明确要求保留的本地配置；在没有该 Windows 路径的 Linux 容器中无法启动 Gradle Wrapper。
+
+**已完成的验证（2026-11-01，开发机 Windows + JDK 17）**：
+
+- `:app:assembleDebug` —— **BUILD SUCCESSFUL，0 警告**；APK `app/build/outputs/apk/debug/NAS-Music-TV-debug-v1-0-0.apk`
+- `:app:testDebugUnitTest` —— **2427 测试 / 0 失败 / 0 错误**
+- 装包 —— `tv5`（Android TV / android-22）模拟器安装 `com.lnh.nasmusictv` 成功并可运行
+
+**尚未执行的验证**：物理电视盒子 / NAS 真机的 WebDAV、SMB 目录浏览与流式播放端到端联调。
+
+> ⛔ 复现命令见 `AGENTS.md` §2（构建与测试）；本机有两个必踩坑：含中文路径的 `GRADLE_USER_HOME` 会让测试 worker 崩溃（用 `subst G:` 映射），以及必须加 `--no-daemon`。

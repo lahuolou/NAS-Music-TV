@@ -395,11 +395,11 @@ class MoonDiskBakeTest {
     // ══════════════════ E. 源码扫描（G6 上下文泄漏 / G7 新增资产 / G8 位图分配）══════════════════
 
     private fun rendererSource(): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonlitRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonlitRenderer.kt").readText()
 
     @Test
     fun `E1 G6 工厂只传 applicationContext 且 context 只用于 assets`() {
-        val factory = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/VisualizerRendererFactory.kt").readText()
+        val factory = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/VisualizerRendererFactory.kt").readText()
         assertTrue(
             "工厂分支必须写成 MoonlitRenderer(context.applicationContext)（§5.3，防 Activity 泄漏）",
             factory.contains("MoonlitRenderer(context.applicationContext)"),

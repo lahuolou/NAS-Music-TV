@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
@@ -55,7 +56,6 @@ import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.LocalFocusableContentColor
 import com.lnh.nasmusictv.ui.screens.LibraryTab
 import com.lnh.nasmusictv.ui.theme.FontSize
-import com.lnh.nasmusictv.ui.theme.LocalPhoneCompact
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
 import com.lnh.nasmusictv.util.PinyinUtils
 /**
@@ -361,8 +361,8 @@ internal fun SideLetterIndex(
     var focusedLetter by remember { mutableStateOf<Char?>(null) }
     val focusManager = LocalFocusManager.current
 
-    // 手机横屏时字母排不下，用更小尺寸 + 可滚动
-    val isPhone = LocalPhoneCompact.current
+    // 窄窗口（<600dp，含电视多窗口/低分辨率容器）时字母排不下，用更小尺寸 + 可滚动
+    val isPhone = LocalConfiguration.current.screenWidthDp < 600
     val letterSize = if (isPhone) 14.dp else 20.dp
     val letterFontSize = if (isPhone) 7.sp else 10.sp
     val scrollState = rememberScrollState()

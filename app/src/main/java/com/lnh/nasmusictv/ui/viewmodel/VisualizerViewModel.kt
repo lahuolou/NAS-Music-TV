@@ -14,7 +14,6 @@ import com.lnh.nasmusictv.R
 import com.lnh.nasmusictv.backend.photo.ExternalFilePhotoSource
 import com.lnh.nasmusictv.backend.photo.FaceScanManager
 import com.lnh.nasmusictv.backend.photo.JellyfinPhotoSource
-import com.lnh.nasmusictv.backend.photo.MediaStorePhotoSource
 import com.lnh.nasmusictv.backend.photo.PhotoSource
 import com.lnh.nasmusictv.backend.photo.PhotoSourceKind
 import com.lnh.nasmusictv.backend.photo.PhotoThumbnailProvider
@@ -194,7 +193,8 @@ class VisualizerViewModel(
     private val photoWallSources: Map<PhotoSourceKind, PhotoSource> by lazy {
         val nasApp = app as? NasMusicApp ?: error("Application is not NasMusicApp")
         val out = LinkedHashMap<PhotoSourceKind, PhotoSource>(PhotoSourceKind.entries.size)
-        if (!isTVDevice) out[PhotoSourceKind.GALLERY] = MediaStorePhotoSource(app)
+        // 照片墙「图库」（MediaStore）来源已随手机客户端下线移除：电视无系统图库，
+        // 照片墙改以外接 USB/SD/SAF 与 Jellyfin 为主来源。故不再向来源表加入 GALLERY。
         out[PhotoSourceKind.EXTERNAL] = ExternalFilePhotoSource(
             context = app,
             // 电视：自动探测已挂载的 USB / SD 卡（`StorageMonitor` 的当前快照）

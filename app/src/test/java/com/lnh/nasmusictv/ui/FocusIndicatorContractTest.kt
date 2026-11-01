@@ -427,9 +427,9 @@ class FocusIndicatorContractTest {
 
     private fun uiSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui"),
-            File("app/src/main/java/com/nasmusic/tv/ui"),
-            File("../app/src/main/java/com/nasmusic/tv/ui"),
+            File("src/main/java/com/lnh/nasmusictv/ui"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue(

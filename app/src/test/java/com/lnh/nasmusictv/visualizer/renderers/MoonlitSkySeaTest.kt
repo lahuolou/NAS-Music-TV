@@ -327,15 +327,15 @@ class MoonlitSkySeaTest {
     }
 
     private fun rendererSource(): String = stripComments(
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonlitRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonlitRenderer.kt").readText()
     )
 
     private fun seascapeSource(): String = stripComments(
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonSeascape.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonSeascape.kt").readText()
     )
 
     private fun bakeSource(): String = stripComments(
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonDiskBake.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonDiskBake.kt").readText()
     )
 
     /** 剥块注释（Kotlin 可嵌套）与行注释，⛔ 必须保持行数一致（定位按原始行号）。 */

@@ -84,9 +84,9 @@ class SettingsSectionWiringGateTest {
 
     private fun settingsKtFiles(): Array<File> {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui/screens/settings"),
-            File("app/src/main/java/com/nasmusic/tv/ui/screens/settings"),
-            File("../app/src/main/java/com/nasmusic/tv/ui/screens/settings"),
+            File("src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui/screens/settings"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue("找不到设置源码目录（user.dir=${File("").absolutePath}）", found != null)
@@ -103,9 +103,9 @@ class SettingsSectionWiringGateTest {
      */
     private fun mainSource(relativePath: String): String {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/$relativePath"),
-            File("app/src/main/java/com/nasmusic/tv/$relativePath"),
-            File("../app/src/main/java/com/nasmusic/tv/$relativePath"),
+            File("src/main/java/com/lnh/nasmusictv/$relativePath"),
+            File("app/src/main/java/com/lnh/nasmusictv/$relativePath"),
+            File("../app/src/main/java/com/lnh/nasmusictv/$relativePath"),
         )
         val found = candidates.firstOrNull { it.isFile }
         assertTrue("找不到 $relativePath（user.dir=${File("").absolutePath}）；已尝试：${candidates.joinToString { it.absolutePath }}", found != null)

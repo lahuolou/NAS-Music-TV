@@ -133,16 +133,10 @@ fun TextInputDialog(
     var text by remember(initialValue) { mutableStateOf(initialValue) }
     var isUpperCase by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    // 手机端：强制使用系统 IME（不显示自定义键盘、不启动 QR）；TV 端保持原样
-    // 与 MainActivity 一致，同时检查 leanback 和 television 特性
-    val isTVDevice = context.packageManager.hasSystemFeature("android.software.leanback") ||
-            context.packageManager.hasSystemFeature("android.hardware.type.television")
-    // 是否切换到系统 IME 输入模式
-    var showSystemIme by remember {
-        mutableStateOf(!isTVDevice)  // 手机端默认系统 IME，TV 端默认自定义键盘
-    }
-    // 二维码扫码：仅 TV 启用（手机端直接触摸系统键盘输入）
-    val effectiveShowQrCode = if (isTVDevice) showQrCode else false
+    // TV 自定义键盘为默认输入（手机仅作浏览器遥控，不再有原生输入框）
+    var showSystemIme by remember { mutableStateOf(false) }
+    // 二维码扫码：手机浏览器遥控输入入口，按调用方开关启用（TV 唯一完整客户端）
+    val effectiveShowQrCode = showQrCode
     val effectiveShowHistory = showHistory  // 搜索历史手机端也可用
     // IME 不可用时的提示消息（null 表示无提示）
     var imeUnavailableMsg by remember { mutableStateOf<String?>(null) }
@@ -164,7 +158,7 @@ fun TextInputDialog(
     // IME 模式下"返回键盘"按钮的焦点
     val backToKeyboardFocusRequester = remember { FocusRequester() }
 
-    // 启动/停止本地输入服务器（仅 TV 启用）
+    // 启动/停止本地输入服务器（TV 唯一完整客户端；手机经浏览器扫码遥控）
     DisposableEffect(effectiveShowQrCode) {
         if (effectiveShowQrCode) {
             val ip = NetworkUtils.getLocalIpAddress()

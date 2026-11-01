@@ -243,7 +243,7 @@ class MoonlitDtClockTest {
     // ── 夹具 ─────────────────────────────────────────────────────────────────────
 
     private fun readFile(name: String): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/$name").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/$name").readText()
 
     /**
      * ⚠️ 判据一律跑在**剥掉注释**的源码上：本文件的类 KDoc 与红线说明里**原文引用**了

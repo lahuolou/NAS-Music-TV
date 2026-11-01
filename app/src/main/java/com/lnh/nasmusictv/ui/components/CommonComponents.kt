@@ -66,7 +66,7 @@ fun BackButton(
  *
  * 点击整个搜索框触发 [onOpenSearch]（调用方负责弹出输入对话框）；
  * 已有搜索词时框内显示 ✕ 清除按钮，点击触发 [onClear]。
- * 宽度由调用方通过 modifier 指定，高度统一 48dp（**竖屏抬到 [PHONE_TOUCH_TARGET]**，见 §2.7）。
+ * 宽度由调用方通过 modifier 指定，高度统一 48dp（**TV 抬到 [TV_TOUCH_TARGET]**，见 §2.7）。
  */
 @Composable
 fun SearchField(
@@ -152,26 +152,26 @@ fun adaptiveColumns(tv: Int, phonePortrait: Int, medium: Int = phonePortrait): I
 }
 
 /**
- * 竖屏触摸目标下限（**Compose dp 口径**，方案 §2.7 第 1 条 / P0-26）。
+ * 触摸目标下限（**Compose dp 口径**，方案 §2.7 第 1 条 / P0-26）。
  *
- * 物理 44dp（Android 无障碍下限）÷ `CompactSizes.PHONE_UI_SCALE`(0.82) ≈ **53.66**，
- * 取整到 **56**：`56 × 0.82 ≈ 45.9 物理 dp ≥ 44` ✅。
+ * TV / 横屏下物理 dp = Compose dp（无 0.82 缩放），故热区下限直接用 **56dp**
+ * 即可满足 Android 无障碍 44 物理 dp 下限：`56 Compose dp ≥ 44 物理 dp` ✅。
  *
- * ⚠️ 竖屏下 `LocalDensity` 被 0.82 缩放，**44 / 48 Compose dp 分别只有 36.1 / 39.4 物理 dp**，
- * 都不达标 —— 代码里不能再拿 44dp 当热区下限。新增竖屏控件请用 [portraitTouchTarget]。
+ * ⚠️ 所有控件热区不得低于 56dp（TV 遥控器远焦 + 大屏可读性要求）。
+ * 新增控件请用 [portraitTouchTarget]（竖屏已下线，恒返回入参）。
  *
  * 保留为 `Float` 常量是为了让 [com.lnh.nasmusictv.ui.theme.UiModeTest] 能在纯 JVM 下断言该算术。
  */
-const val PHONE_TOUCH_TARGET_DP: Float = 56f
+const val TV_TOUCH_TARGET_DP: Float = 56f
 
-/** [PHONE_TOUCH_TARGET_DP] 的 `Dp` 形式 */
-val PHONE_TOUCH_TARGET: Dp = PHONE_TOUCH_TARGET_DP.dp
+/** [TV_TOUCH_TARGET_DP] 的 `Dp` 形式 */
+val TV_TOUCH_TARGET: Dp = TV_TOUCH_TARGET_DP.dp
 
 /**
  * 触摸目标尺寸（竖屏，方案 §2.7 / P0-26；竖屏已下线）。
  *
  * 竖屏下线后恒返回 [landscape] —— 与竖屏移除前 TV / 手机横屏的取值**逐字等价**（B1）。
- * 函数与 [PHONE_TOUCH_TARGET] 保留：`PHONE_TOUCH_TARGET_DP` 的 56dp 算术仍由
+ * 函数与 [TV_TOUCH_TARGET] 保留：`TV_TOUCH_TARGET_DP` 的 56dp 算术仍由
  * `UiModeTest` 护栏断言，全部调用点无需改动。
  *
  * 用法：`Modifier.size(portraitTouchTarget(48.dp))` / `Modifier.height(portraitTouchTarget(44.dp))`

@@ -490,7 +490,7 @@ class OrbitalStarFieldTest {
     private fun readFile(f: File): String = f.readText()
 
     private fun renderersFile(name: String): File =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/$name")
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/$name")
 
     private fun mainSourceRoot(): File {
         var dir = File(System.getProperty("user.dir")!!)

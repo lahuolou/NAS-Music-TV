@@ -423,7 +423,8 @@ class PhotoWallController(
 
     private fun enabledKinds(s: AppSettings): Set<PhotoSourceKind> {
         val out = LinkedHashSet<PhotoSourceKind>(PhotoSourceKind.entries.size)
-        if (s.photoWallGalleryEnabled) out.add(PhotoSourceKind.GALLERY)
+        // 照片墙「图库」（MediaStore）来源已随手机客户端下线移除，不再加入启用集合。
+        // 旧备份/缓存里的 `gallery:<id>` 引用在解码时仅作忽略处理，不会令解码崩溃。
         if (s.photoWallExternalEnabled) out.add(PhotoSourceKind.EXTERNAL)
         if (s.photoWallJellyfinEnabled) out.add(PhotoSourceKind.JELLYFIN)
         return out

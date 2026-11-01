@@ -510,7 +510,7 @@ class MoonlitWaterTest {
 
     @Test
     fun `⑧d MoonWater 零 Android 依赖（G4 能纯 JVM 重算的前提）`() {
-        val raw = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonWater.kt").readText()
+        val raw = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonWater.kt").readText()
         assertFalse("⛔ import android", Regex("""^\s*import\s+android""").containsMatchIn(raw))
         assertFalse("⛔ import androidx", Regex("""^\s*import\s+androidx""").containsMatchIn(raw))
         assertFalse("⛔ 零 Random（对账要求同种子同结果）", raw.contains("kotlin.random.Random"))
@@ -692,7 +692,7 @@ class MoonlitWaterTest {
     }
 
     private fun rendererSource(): String = stripComments(
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonlitRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonlitRenderer.kt").readText()
     )
 
     /** 取 `fun <name>(…)` 的大括号体（同 [MoonlitSkySeaTest] 的夹具，⛔ 不跨类共享以免互相牵制）。 */

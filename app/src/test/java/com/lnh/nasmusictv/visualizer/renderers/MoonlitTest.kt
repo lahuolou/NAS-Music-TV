@@ -764,7 +764,7 @@ class MoonlitTest {
 
     @Test
     fun `⑬e 云场零 Android 依赖（G3 可纯 JVM 跑的前提）`() {
-        val src = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonClouds.kt").readText()
+        val src = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonClouds.kt").readText()
         val imports = src.lines().filter { it.startsWith("import ") }
         assertTrue("MoonClouds 引入了 Android: $imports",
             imports.none { it.contains("android") || it.contains("androidx") || it.contains("compose") })
@@ -940,7 +940,7 @@ class MoonlitTest {
     }
 
     private fun sourceOf(name: String): String =
-        stripComments(File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/$name").readText())
+        stripComments(File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/$name").readText())
 
     /** 找出所有 `fun DrawScope.drawXxx(...)` 的**函数体**（门禁只该管逐帧路径）。 */
     private fun drawScopeBodies(src: String): Map<String, String> {
