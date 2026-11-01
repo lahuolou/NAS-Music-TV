@@ -2,12 +2,133 @@
 
 > **归档日期**：2026-09-20（三轮）
 > **归档依据**：见 `AGENTS.md` → Conventions → *Doc lifecycle* 与
-> `docs/technical-overview.md` §10.166–§10.167。
+> `docs/archive/technical-overview-changelog.md`（原 `technical-overview.md` §10 的修改记录流水）。
 >
 > 本目录存放**已完成使命**的文档：功能已发布、审查已闭环、方案已实施、方案已废弃。
 > 它们**不再维护**，保留在此仅作历史追溯与决策依据。
 
+---
+
+# ⭐ 代码对账索引（2026-11-01 按源码重新核对 · 权威基准）
+
+> 本节由**源码扫描**生成：逐份标注归档文档所描述的功能**当前是否已实现**。
+> 判定依据是**当前仓库的代码事实**，不是文档自身的状态标记（历史教训见文末「归档史中的教训」）。
+> 下方「第一轮 … 第十六轮」是**归档过程史**，原文保留不改写 —— 归档是纯移动，历史脉络是资产。
+
+## 判定口径
+
+| 标记 | 含义 |
+|------|------|
+| ✅ **已实现** | 功能在当前源码中存在**且已接线到 UI**，可直接使用 |
+| ⚠️ **部分实现 / 形态已变** | 核心能力在，但范围、形态或接入方式与文档描述不同 |
+| ❌ **未实现 / 已放弃** | 源码零命中，或所有者已明确裁决放弃 |
+| 📄 **过程文档** | 审查报告 / 路线图 / 验收记录等历史材料，非功能描述 |
+
+## A. 后端与数据源
+
+| 文档 | 主题 | 状态 | 代码依据 |
+|---|---|---|---|
+| `subsonic-support-plan.md` | Subsonic 接入 | ✅ | `backend/impl/SubsonicAdapter.kt` + `SubsonicRestClient.kt`（Token+Salt） |
+| `daoliyu-feiniu-backend-plan.md` | 岛鲤鱼 / 飞牛 | ✅ | `backend/impl/DaoliyuAdapter.kt`、`FeiniuAdapter.kt`、`FeiniuUrl.kt` |
+| `feiniu-backend-improvement-plan.md` | 飞牛后端加固 | ✅ | 同上；`FeiniuUrl.kt` 的 streamUrl / 端口 / GUID 契约已落码 |
+| `feiniu-track-list-empty-improvement-plan.md` | 飞牛空列表修复 | ✅ | `FeiniuAdapter.kt` 安全访问器 + `duration` 兼容小数 |
+| `unified-source-architecture.md` | 统一源架构 | ✅ | `backend/BackendAdapter.kt` + `BackendRegistry.kt`（注册 **7** 种类型） |
+| `百度网盘音乐播放开发方案.md` | 百度网盘 | ✅ | `backend/network/baidu/`（OAuth + 流式 + 歌词 + 封面 + MV 文件 + 增量索引） |
+| `music-api-solution.md` | 聚合音乐 API | ✅ | `backend/network/MetingApiService.kt` |
+| `network-music-feature-proposal.md` / `network-music-tab-plan.md` / `network-music-failover-plan.md` | 网络音乐与多源降级 | ✅ | `backend/network/NetworkMusicManager.kt`、`SearchAggregator.kt`、`NetworkMusicService.kt` |
+| `network-artist-full-discography-plan.md` | 艺人全量作品 | ✅ | `backend/network/NetworkArtistExpansion.kt` + `NetworkArtistTypes.kt` |
+| `radio-and-jamendo-source-plan.md` | 电台 + Jamendo | ✅ | `backend/radio/`（`RadioBrowserClient` / `RadioSongScorer` / `SmartRadioManager`）、`JamendoService.kt` |
+| `local-music-feature-plan.md` | 本地音乐 | ✅ | `backend/local/`（`MusicScanner` / `LocalMusicRepository`）+ `LocalMusicDatabase`（`local_music.db` v3） |
+| `backend-api-version-display-plan.md` | 后端 API 版本号展示 | ✅ | `data/model/VersionInfo.kt`（sealed interface，4 态：Static/Runtime/NoVersion/Disconnected） |
+| `android-auto-plan.md` | Android Auto / 车机 | ✅ | `PlaybackService` 注册 `MediaLibraryService` + `MEDIA_PLAY_FROM_SEARCH`；`automotive_app_desc` / `ic_car_attribution` meta-data |
+| `aliyundrive-support-plan.md` | 阿里云盘 | ❌ | 官方已关闭第三方应用访问；`CloudDriveType.ALIYUN` 仅枚举占位，**无适配器** |
+| `quark-drive-integration-plan.md` | 夸克网盘 | ❌ | `open.quark.cn` 是小程序开发者平台而非网盘开放平台；`CloudDriveType.QUARK` 为 `PLACEHOLDER`，`IMPLEMENTED` 仅 `BAIDU` |
+| `network-music-upgrade-plan.md` | 对接 Go Music API | ❌ | 无公开端点、须自部署，主动放弃；源码零命中 |
+| `metadata-search-service-solution.md` | 元数据检索服务 | ⚠️ 形态已变 | 能力由 `SearchAggregator` + `NetworkArtistExpansion` 承载，原方案关键词不再命中 |
+| `audition-lyrics-solution.md` | 试听 / 歌词方案 | ⚠️ 形态已变 | 由 `lyrics/` 包统一承载（见 B 组「歌词/封面优化」） |
+
+## B. 播放 / 歌词 / K 歌 / 下载
+
+| 文档 | 主题 | 状态 | 代码依据 |
+|---|---|---|---|
+| `multi-bitrate-playback-download-plan.md` | 多码率 | ✅ | `data/model/QualityTiers.kt` + `backend/download/QualityProbe.kt` + `data/prefs/QualityOverrides.kt` |
+| `歌曲离线下载与本地存储管理开发方案.md` | 离线下载 | ✅ | `backend/download/`（`SongDownloadManager` / `DownloadRepository`）+ `DownloadDatabase`（v3，真实迁移 M1_2/M2_3）+ `MediaTagWriter` |
+| `K歌开发方案.md` | K 歌 | ✅ | `ui/components/KaraokePlaybackScreen.kt` + `KaraokeLyricsView.kt` + `player/SeparationMode.kt` |
+| `vocal-removal-approach-c-ai.md` | AI 人声分离（Demucs） | ✅ | `player/DemucsSeparator.kt` + `HqSeparationOrchestrator.kt`（`HIGH_QUALITY` 模式） |
+| `vocal-removal-approach-b-dsp.md` | DSP 人声消除 | ✅（作为 FAST 模式仍在用） | `player/SpectralMaskProcessor.kt` = `SeparationMode.FAST`；`PcmTapProcessor` / `PcmFallbackChannel` / `AccompanimentCache` |
+| `vocal-separation-pitch-speed-plan.md` | 变调 / 变速 | ✅ | K 歌页 `setPitch` / `setSpeed` 链路 |
+| `mv-karaoke-feature-proposal.md` | MV + K 歌联动 | ✅ | `backend/network/mv/`（`BilibiliMvService` / `MvSearchManager` / `MvPersistentCache`）+ `ui/components/MvPlaybackScreen.kt` |
+| `karaoke-picker-tv-focus-fix-plan.md` | K 歌弹层遥控焦点 | ✅ | `KaraokePickerTvFocusScanTest` / `VocalPitchSpeedPreviewCommitTest` 门禁在库 |
+| `optimization-plan-lyrics-cover.md` | 歌词 / 封面优化 | ✅ | `lyrics/`（`LrcParser` 逐字时间戳）+ `backend/local/*Cover*`（`AlbumCoverResolver` / `ArtistCoverResolver` / `ItunesCoverSearcher`） |
+| `pinyin-search-plan.md` | 拼音搜索 | ✅ | `util/` 的 `PinyinUtils` + `data/model/SongWithPinyin.kt` + `SearchAggregator`（已是**默认主路径**） |
+| `playlist-import-feature-plan.md` | 歌单导入 | ✅ | `backend/playlist/`（`M3uPlaylistParser` / `NeteaseCloudPlaylistParser` / `JsonPlaylistParser`） |
+| `photo-spectrum-effect-plan.md` | 照片墙 + 频谱 | ✅ | `visualizer/photo/` + 主题 `PHOTO_WALL` + `backend/photo/` |
+| `library-ui-optimization-plan.md` | 曲库 UI 优化 | ✅ | `ui/screens/library/`（`DiscoverTab` / `SearchTab` / `RadioTab` / `JamendoTab` / `browse/`） |
+| `settings-reorganization-plan.md` | 设置区整理 | ✅ | `ui/screens/settings/`（11 个 `*Section`） |
+| `remote-control-design.md` | 手机/PC 反向遥控 | ✅ | `net/RemoteControlServer.kt`(18082) + `LocalInputServer.kt`(18080) + `LocalServerAuth` + `QrCodeGenerator` |
+
+## C. 可视化（当前 **26** 套主题，逐条核对）
+
+| 文档 | 主题 | 状态 | 代码依据 |
+|---|---|---|---|
+| `music-visualizer-dev-plan.md` | 可视化总纲 | ✅ | `visualizer/` 全量；主题枚举在 `data/model/AppSettings.kt:125` |
+| `moonlit-visualizer-plan.md` | E44 明月 | ✅ | `MoonlitRenderer.kt` + `Moon*.kt`（7 文件）→ 主题 `MOONLIT` |
+| `seaside-visualizer-plan.md` | E43 海边 | ✅ | `SeasideRenderer.kt` + `SeasideWaves.kt` + `SeasideOpBudget.kt` → `SEASIDE` |
+| `e46-tripod-fog-plan.md` | E46 迷雾之战 | ✅ | `TripodFogRenderer.kt` + `TripodFogMath/Bake/Gait` → `TRIPOD_FOG` |
+| `e47-snow-cedar-plan.md` | E47 雪松 | ✅ | `SnowCedarRenderer.kt` + `SnowCedar{Bakes,Math,Params,Tree}.kt` → `SNOW_CEDAR` |
+| `e48-desert-smoke-plan.md` | E48 大漠孤烟 | ✅ | `DesertSmokeRenderer.kt` + `DesertSmoke{Bakes,Crest}.kt` → `DESERT_SMOKE` |
+| `e49-birds-flock-plan.md` | E49 鸟群 | ✅ | `BirdsFlockRenderer.kt` + `BirdsFlock{Bakes,Flock,Math}.kt` → `BIRDS_FLOCK` |
+| `starry-sky-visualizer-plan.md` | E42 星空星轨 | ✅ | `StarrySkyRenderer.kt` → `STAR_TRAILS` |
+| `solar-system-upgrade-plan.md` | E29 太阳系 | ✅ | `OrbitalRings` 主题（`AppSettings.kt` 枚举） |
+| `催眠频谱效果开发方案.md` | 催眠频谱 | ✅ | `HypnoticFunctionRenderer.kt` + `FormulaLayout.kt` → `HYPNOTIC_FUNCTION` |
+| `e41-tv-blackscreen-fix-plan.md` | E41 世界 · 电视黑屏 | ⚠️ 修复已放弃 | 真根因在**宿主**（该机 WebView 在 Compose `AndroidView` 里只画首帧）；最终把 `WORLD` 提到 `Tier.ULTRA`，仅 HIGH 档提供 |
+| `visualizer-texture-upgrade-plan.md` | 质感升级 | ⚠️ 部分实现 | 批次 A/B 已落码（`RendererFx.kt` 基类 + `AdvancedRenderers.kt`）；批次 C（6 套质感改造）与真机逐套验收未做 —— 所有者裁决「不再推进」 |
+| `slow-roads-visualizer-plan.md` | 慢行道 | ❌ | 源码零命中（`Road` / `SlowRoad` 全仓 0） |
+| `deskworlds-port-feasibility.md` | 桌面世界 | ❌ | 所有者裁决放弃；源码零命中（`DeskWorld` 0） |
+
+## D. 工程 / 流程 / 过程材料
+
+| 文档 | 主题 | 状态 | 说明 |
+|---|---|---|---|
+| `permission-and-signing-plan.md` | 权限与签名 | ✅ | S0–S8 已实施；`ReleaseSigningGateTest` / CI fail-fast / `keystore.properties` 双模签名均落地 |
+| `github-actions-android-ci-cd.md` | CI/CD | ✅ | `.github/workflows/build.yml` 三个 job：`build` / `test` / `lint` |
+| `codebase-optimization-plan.md` | 代码库优化 | ✅ | 泛化优化，具体项已融入各模块 |
+| `codebase-refactoring-plan.md`（`-2026-09.md`） | 代码库重构 | ✅（含 2 项**未决**） | R-5 四阶段拆分、F-8 下载保活仍待所有者决策，**归档 ≠ 已解决** |
+| `codebase-architecture.html` | 架构快照 | 📄 | 一次性产物，已被 `docs/technical-overview.md`（按代码重写版）取代 |
+| `technical-overview-changelog.md` | 技术总览 · 修改记录 | 📄 | 2026-11-01 归档：原 `docs/technical-overview.md` §10 的 1.6 万行历史变更流水（§10.1–§10.282），迁出以让架构正文瘦身至 226 行；当前变更记录见 `technical-overview.md` §15 与 `CHANGELOG.md` |
+| `code-review-*.md`（8 份）+ `code-review-full-report-2026-09-13.md` + `code-review-karaoke-onnx-2026-09-14.md` + `code-review-deferred-analysis-2026-09-04.md` | 代码审查报告 | 📄 | 历史审查材料，非功能描述 |
+| `regression-test.md` / `v2.7.0-feature-test.md` / `roadmap.md` | 测试与待办清单 | 📄 | 历史材料 |
+| `nas-music-tv-v2.6-feature-proposal-from-mineradio.md` | v2.6 功能提案 | 📄 | 该版本早已发布 |
+| `百度网盘音乐播放开发方案-评审意见.md` | 评审意见 | 📄 | 15 项已回填至方案 v2 |
+| `feature-dev-plan-2026-09.md` | 2026-09 功能规划 | 📄 | 规划类，内容已分散落入各模块 |
+
+## E. 归档外：`docs/` 根仍存在的方案（非归档件，一并记录）
+
+| 文档 | 状态 | 说明 |
+|---|---|---|
+| `docs/blackhole-visualizer-plan.md` + `blackhole-preview.html` | ⏳ **未落地** | 源码无对应 Renderer；仍在 `docs/` 根按「在办方案」保留 |
+| `docs/e45-orbital-plan.md` + `e45-orbital-preview.html` | ⏳ **未落地** | 同上；⚠️ 与 `e50-qianli-jiangshan` 的「E45」编号冲突，待澄清 |
+| `docs/e50-qianli-jiangshan-plan.md` + `e50-qianli-jiangshan-preview.html` | ⏳ **未落地** | 同上 |
+| `docs/phone-client-cleanup-checklist.md` | ✅ **已完成** | 手机客户端下线方案的执行清单，阶段已全部完成 |
+| `docs/visualizer-effects-list.md` | ✅ **现役名册** | 与 `VisualizerTheme` 枚举逐条核对（26 套） |
+| `docs/webdav-smb-tv.md` / `docs/webdav-smb-audit.md` | ✅ **现役实现说明** | WebDAV / SMB 音乐源实现与边界 |
+| `docs/feiniu-diagnose.sh` | ✅ **活诊断脚本** | 飞牛后端问题复现与诊断 |
+
+## F. 归档史中的教训（保留，避免重蹈）
+
+> ⭐ **CHANGELOG 交叉验证对「已上线功能」有效，但对「方案变更」与「主动放弃」必然漏判。**
+> 「CHANGELOG 零命中」**不能**推出「未落地」—— 历史第二轮有 10 篇因此被误判保留，后被所有者逐条推翻。
+> 判定当前状态时，**以源码扫描为准**（本索引即如此产出）。
+>
+> ⚠️ **工具盲区**：改写引用时，只扫 `docs/` 前缀**扫不到裸文件名**；且带**行号锚点**的引用（`xxx.md:123`）在文件被编辑后会正负双向漂移。
+> ⇒ 今后引用已归档文档**一律用章节号（§ / T / 任务号），不要用行号**。
+
+---
+
 ## ⛔ 三条判定原则（都不是「是否被引用」）
+
+> 以下三条治理的是**归档动作本身**（何时可以把文档移进本目录）；
+> 而**「该功能当前是否已实现」**由上方的「代码对账索引」回答 —— 两者不是同一件事，判定口径不同。
 
 **原则 1 — 文档自身的「状态」标记会过期，以 `CHANGELOG.md` / `technical-overview.md` / 所有者结论为准。**
 标记只说明「文档没回填」，不说明「功能没做」。第三轮的 10 篇**全部**自称

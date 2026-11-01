@@ -1,217 +1,263 @@
 # AGENTS.md — NAS-Music-TV
 
-Compact guide for OpenCode sessions. Every line is something an agent would likely miss without help.
+> 给协作者与 AI 代理的速查手册。**每条结论都来自源码/构建文件核实**，不含历史方案的推测。
+> 与本文冲突的 `docs/archive/*` 是「当时的设计意图」，不代表当前实现。
 
-## Project Overview
+---
 
-Android TV music player (Kotlin + Jetpack Compose for TV) that connects to **Jellyfin** or **Navidrome** backends, plus an independent **network music** layer (Meting-API search) and a **weather radio** feature. Single-module Gradle project.
+## 1. Project Overview
 
-- Package: `com.lnh.nasmusictv` — Min SDK 22, Target SDK 34, Java 17
-- Kotlin 2.3.10; TV Compose `androidx.tv:tv-material` is **alpha** (`ExperimentalTvMaterial3Api` opt-in set in `app/build.gradle.kts`, used throughout)
+Android **TV** 音乐播放器（Kotlin + Jetpack Compose for TV），聚合 NAS / 网络共享 / 网盘 / 网络音乐多源，支持本地曲库、MV、K 歌、音乐可视化，并可用手机或电脑浏览器**扫码反向遥控**。
+
+- 包名 `com.lnh.nasmusictv` · 单模块 Gradle 工程
+- `minSdk 22` / `targetSdk 34` / `compileSdk 34` / `versionName 1.0.0` · Java 17
+- Kotlin 2.3.10 + Compose 插件 2.3.10 + KSP 2.3.10 + AGP 9.2.1
+- TV Compose `androidx.tv:tv-material` 仍是 **alpha** → 需 `-opt-in=androidx.tv.material3.ExperimentalTvMaterial3Api`（已在 `app/build.gradle.kts` 全局设置）
+- **TV-only**：`UiMode` 枚举只剩 `TV`；`MainActivity` 强制 `sensorLandscape`；手机不是客户端，只当遥控器
 - GPL v3
 
-## Build (Windows)
+### 源码规模（`app/src/main`，约 480 个 kt 文件）
+| 包 | 文件数 | 职责 |
+|----|--------|------|
+| `ui/` | 126 | Compose 界面、组件、ViewModel、主题 |
+| `backend/` | 110 | 数据源：NAS 后端 / 网络音乐 / 本地扫描 / 文件访问 / 下载 / 导出 / 照片墙 / 歌单 / 电台 / 天气 |
+| `visualizer/` | 106 | 25+ 渲染主题（`fx` / `renderers` / `photo`） |
+| `data/` | 73 | 数据模型、DataStore 偏好、播放统计、缓存清单 |
+| `util/` | 23 | 编码、拼音、网络等工具 |
+| `player/` | 23 | Media3 播放状态机、服务、均衡器频谱、人声分离 |
+| `net/` | 10 | 6 个 NanoHTTPD 服务器 + 传输工具 |
+| `lyrics/` | 5 | LRC/逐字解析、歌词获取优先级 |
 
-JDK comes from Android Studio's bundled JetBrains Runtime. Gradle wrapper points at a **local file URL** (`file:///C:/Users/hxzha/Downloads/gradle-9.5.0-bin.zip`) — intentional for offline builds; do not "fix" it to a network URL.
+---
 
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+## 2. Build & Test (Windows，本机实测)
 
-./gradlew.bat assembleDebug      # debug APK
-./gradlew.bat assembleRelease    # needs ./keystore.properties (gitignored)
-./gradlew.bat test               # unit tests (Robolectric + JUnit4)
-```
+### 2.1 环境
+| 项 | 路径 |
+|----|------|
+| JDK | `C:\Program Files\Java\jdk-17.0.21.0.2`（Java 17） |
+| Android SDK | `D:\tools\Android\Sdk` |
+| Gradle | 项目 wrapper，`distributionUrl=file:///D:/tools/gradle-9.5.0-bin.zip`（**本地 file URL 是刻意的离线构建设计，不要"改成"网络 URL**；CI 会覆盖为网络分发） |
+| adb | `D:\tools\Android\Sdk\platform-tools\adb.exe`（不在 PATH） |
 
-**adb 不在 PATH** — 完整路径：`C:\Users\hxzha\AppData\Local\Android\Sdk\platform-tools\adb.exe`。安装到电视（无线连接）：
-
-```powershell
-& "C:\Users\hxzha\AppData\Local\Android\Sdk\platform-tools\adb.exe" connect 192.168.0.114:5555
-& "C:\Users\hxzha\AppData\Local\Android\Sdk\platform-tools\adb.exe" -s 192.168.0.114:5555 install -r app\build\outputs\apk\release\app-release.apk
-```
-
-> 电视上若已装 debug 版（签名不同），`install -r` 会报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`，需先 `uninstall com.lnh.nasmusictv` 再安装。Release 切到独立签名（`release-key.jks`）后，旧的 debug 签名 release 包同理也需先卸载。
-
-CI (`.github/workflows/build.yml`) has three jobs: **`build`** runs `assembleRelease` (push to `main`/`develop`, tags `v*`; PR to `main`), **`test`** runs `testDebugUnitTest`, and **`lint`** runs `lintDebug` — lint is now **blocking** (the `continue-on-error` was removed on 2026-09-14 after errors were driven to 0; 256 warnings remain and do not fail it). So a green CI means "compiles + unit tests pass + no new lint errors". The CI `build` job's signing step is **dual-mode + fail-fast** (dual-mode; ** push/tag fail-fast**): if the repo has GitHub Secrets `SIGNING_KEYSTORE_BASE64` + `SIGNING_STORE_PASSWORD` + `SIGNING_KEY_ALIAS` + `SIGNING_KEY_PASSWORD`, it base64-decodes `release-key.jks` and signs with the real key (same APK as local release); the throwaway `ci-keystore.jks` fallback **only applies to `pull_request`** (fork PRs can't access secrets) — on `push`/`tag` a missing `SIGNING_KEYSTORE_BASE64` or `CRYPTO_PASSPHRASE` makes the workflow `exit 1` immediately (D5, 权限与签名统一方案 §14.4; guarded by `ReleaseSigningGateTest`). 发版前须配齐 5 个 repo secrets（含最易漏的 `CRYPTO_PASSPHRASE`，否则 push/tag 直接被 fail-fast 挡下）. Either way the `keystore.properties` it writes must include a `cryptoPassphrase` line, otherwise the `packageRelease` guard in `app/build.gradle.kts` fails the build. Local release builds read `keystore.properties` from the project root — `storeFile` is now a project-root-relative path (`release-key.jks`), and `app/build.gradle.kts` resolves it via `rootProject.file(...)` (not `project.file(...)`).
-
-**本地构建必须加 `--no-daemon`**（本机实测，2026-09-14）：Gradle 守护进程 fork 出的子进程会全部失败——AAPT2 报 `Daemon startup failed / Please check if you installed the Windows Universal C Runtime`（即使资源只改一个字符串也会触发）、测试 worker 立刻退出（exit `268435466` = `0x1000000A`，低 16 位是 Windows `ERROR_BAD_ENVIRONMENT`）、Kotlin 编译守护进程报 `AccessDeniedException`。用 `--no-daemon`（Kotlin 侧再叠 `-Pkotlin.compiler.execution.strategy=in-process`）即可全部绕过：
-
+### 2.2 常用命令
 ```bash
-JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" \
-  ./gradlew.bat assembleDebug lintDebug --no-daemon \
-  -Pkotlin.compiler.execution.strategy=in-process
+export JAVA_HOME="/c/Program Files/Java/jdk-17.0.21.0.2"
+export ANDROID_HOME="/d/tools/Android/Sdk"
+
+./gradlew :app:assembleDebug --no-daemon --continue --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g
+./gradlew :app:testDebugUnitTest --no-daemon --continue --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g
+./gradlew :app:lintDebug --no-daemon
 ```
 
-`--no-daemon` 只影响当前进程，不需要改 `gradle.properties`。注意 `aapt2.exe` 本身能独立运行（`aapt2 version` 正常），问题只出在守护进程模式，所以别被 "Windows Universal C Runtime" 的提示误导。
+### 2.3 ⛔ 本机必须绕的两个坑
 
-**单测在本机可以跑**（2026-09-16 更正）：`./gradlew.bat testDebugUnitTest --no-daemon -Pkotlin.compiler.execution.strategy=in-process` 实测 **184 个 `*Test.kt` / 2035 例**（2026-10-11 `--rerun-tasks` 全量重跑，约 4~6 min；增量跑「up-to-date」时不会重执行测试，验数必须带 `--rerun-tasks`），`--tests "*XxxTest"` 单类隔离也正常（6 例约 30s）。此前记录的「worker JVM 一启动即死（exit `268435466` = `0x1000000A` = Windows `ERROR_BAD_ENVIRONMENT`）」**已不再复现**——根因更可能是**卡死的 Gradle 守护进程持锁**而非本机永久性限制（同日另一提交亦记录「本机首次完整跑通 testDebugUnitTest」）。若再次遇到 worker 秒死，**先跑 `./gradlew.bat --stop` 释放锁再重试**，不要直接判定为环境不可用。**因此本机验证手段是「编译 + lint + 单测」，不要再沿用「不能声称测试通过」的旧口径。**
+**① 中文路径的 `GRADLE_USER_HOME` 会让测试 worker 崩溃**
+`C:\Users\内涵哥\.gradle` 含中文 → Gradle 测试 worker 的 `@argfile` classpath 漏掉 `gradle-worker-main` 引导 jar（`ClassNotFoundException: worker.org.gradle.process.internal.worker.GradleWorkerMain`）。
+**绕法**：`subst G: C:\Users\内涵哥\.gradle` → `export GRADLE_USER_HOME=G:`。该坑**不影响 `assembleDebug`**（Kotlin 编译走 `-in-process`，不 fork worker）。
 
-✅ **原先"全量跑必红"的那条已于 2026-10-12 定位并修复，全量 2040 例 / 186 类零失败**：`visualizer/photo/PhotoWallControllerTest > empty pool never starts a swap and never crashes` 抛 `kotlinx.coroutines.test.UncaughtExceptionsBeforeTest`，真凶是 `NasMusicApp.kt:500` `applicationScope.launch { songDownloadManager.recoverAfterCrash() }`（**onCreate 里唯一没包 try/catch 的一处**，`:517` 包了）在单测里发起的 Room 查询落到了 Robolectric 已拆掉的 SQLite 连接池上，抛 `IllegalStateException: Illegal connection pointer`；经**无 handler** 的 `applicationScope`（`:270`，唯一 `cancel()` 在 `onTerminate()`，而 **Robolectric teardown 不调它**）→ kotlinx 全局收集器 → 被下一个 `runTest` 的类接盘（该类 10 条 `runTest`，全树最密集，最容易接盘）。修法：给 `applicationScope` 加 `CoroutineExceptionHandler` 转 `AppLog.e` —— 命中后 `handleCoroutineException` 不再回落 platform handlers，异常不再成为 unhandled。
-⛔ **可复用的诊断手段**（下次遇到同类"接盘"红直接照用，别再从零推）：`UncaughtExceptionsBeforeTest` 的消息里没线索，**但原始异常就挂在它的 `suppressed` 上**（kotlinx `TestScope.kt:241-246`）——是 **Gradle 报告格式不渲染 suppressed**，不是异常被吞。用**仓库外**的 init script 挂 `TestListener`，在 `afterTest` 里递归 `dump(e.suppressed)` 打到 stdout，并开 `testLogging.showStandardStreams`，`./gradlew.bat testDebugUnitTest -I <脚本>` 跑一次全量即可拿到完整栈。⚠️ 该红是**跨类累积 + 时序**竞态：单独跑「触发类 + 接盘类」**不复现**（2026-10-12 实测 3 类组合全绿），只有全量才稳定踩中 ⇒ 二分探针**可能有假阴性**。另有陷阱——`ExceptionCollector.enabled` 只在首次 `runTest.enter()` 置位且**永不复位**，探针里**必须至少含一个 `runTest` 类**，只由 `runBlocking` 类组成的子集必然假阴性。
+**② 必须加 `--no-daemon`**
+本机 Gradle fork 出的子进程普遍起不来：AAPT2 报 `Daemon startup failed / Please check if you installed the Windows Universal C Runtime`（即使只改一个字符串）、Kotlin 编译守护进程报 `AccessDeniedException`。
+用 `--no-daemon`（Kotlin 侧可叠 `-Pkotlin.compiler.execution.strategy=in-process`）绕过。注意 `aapt2.exe` 本身能独立运行（`aapt2 version` 正常），问题只出在守护进程模式，**别被 "Windows Universal C Runtime" 的提示误导**。
 
-## Architecture (verified against source)
+**③ `fileHashes.lock (拒绝访问)`**
+`--no-daemon` 仍可能被 `org.gradle.jvmargs` 强制 fork 一次单次守护进程；若它卡在退出序列并持有 `.gradle/<ver>/fileHashes/fileHashes.lock`，后续构建全部在 `Could not create service of type FileHasher` 秒失败。
+**解法**：`./gradlew --stop`（打印 `1 Daemon stopped`）后重跑。⛔ **不要 `rm` 锁文件** —— 带 safe-delete 包装的环境里 `rm` 失败会把文件留在 Windows「删除挂起」状态，之后任何 open 都 `Permission denied`，**反而让后续构建全挂**；`rm` 报 `Device or resource busy` 就说明有进程持有，去 `--stop` 而不是硬删。
 
-- **Manual DI container**: `NasMusicApp` constructs and holds the global instances — `backendRegistry`, `appPreferences` (`AppPreferences`), `playerManager` (`PlayerManager`), `networkMusicManager` (`NetworkMusicManager`). There is **no DI framework** and **no `getInstance()` singleton** — these are plain classes instantiated once in `NasMusicApp.onCreate()`. Access them by casting `Application` to `NasMusicApp` (e.g. `MainViewModel` does `app as NasMusicApp`).
-- **Backend adapters**: `BackendAdapter` interface; live implementations in `backend/impl/` (`JellyfinAdapter`, `NavidromeAdapter`). Both use **raw OkHttp**, not Retrofit. `BackendRegistry` holds the active adapter in memory only (reconnect on restart reads `AppPreferences`). `testConnection()` builds a throwaway adapter and never mutates current state.
-- **Playback**: `PlaybackService` (Media3 `MediaLibraryService`) creates the ExoPlayer and registers it with `PlayerManager`. Progress is driven by a 1000ms `Handler` polling loop in `PlayerManager`, **not** ExoPlayer callbacks. Network songs carry no resolved `streamUrl` until played — `PlayerManager.onNeedResolveStreamUrl` signals `MainViewModel` to resolve then replay.
-- **Lyrics**: `LyricsManager` is constructed in `MainViewModel` (takes `context`, `backendRegistry`, `networkMusicManager`). It **does** call `BackendAdapter.getLyrics()` (Jellyfin lyric endpoint). Priority: local cache → backend API / `NetworkMusicManager` → network match (fuzzy title+artist). Older docs describing MP3-embedded / local-LRC-file scanning are stale.
-- **Network music**: `backend/network/` — `MetingApiService` + `NetworkMusicManager` (multi-endpoint fallback, 302 redirect resolution, play-url cache LRU 500 — `PLAY_URL_CACHE_MAX`; favorites only exist in NAS adapters, NetworkMusicManager has no favorites capability). Independent of the NAS backend.
-- **Weather radio**: `backend/weather/` — `WeatherApi` (OpenWeatherMap) + `WeatherRadioManager` matches songs by mood. `BackendAdapter` was made nullable so weather radio works with no NAS connection.
-- **Visualizer**: `visualizer/` (fx/renderers/photo) — the old 2D `WorldRenderer` (E41, 2106 lines, zero instantiation points) was **deleted** on 2026-10-06 (code-review M11); E41 "World" is served by the 3D `WorldGlobeRenderer` (WebView + three-globe) only. Do not re-add a 2D world renderer; `FxCoverageScanTest` gate expects 25 renderer classes (E44「明月」`MoonlitRenderer` added 2026-10-08, theme count 21 → 22; E46「迷雾之战」`TripodFogRenderer` added 2026-10-13, theme count 22 → 23; E47「雪松」`SnowCedarRenderer` added 2026-10-14, theme count 23 → 24; E49「鸟群」`BirdsFlockRenderer` added 2026-10-15, theme count 24 → 25; E48「大漠」reserves ordinal `"48"` but has not landed). `VisualizerRendererFactory.create(theme, context)` now consumes `context` for a second reason: `MOONLIT` decodes `assets/globe/moon.jpg`, so its branch must pass `context.applicationContext` (never the Activity). Bilingual display names are guarded by `VisualizerThemeStringsGateTest` (a missing `values-en` key compiles fine and crashes at render time).
-- **E41 资产分两处（2026-10-07 拆开，别合回去）**：`app/src/main/assets/globe/` 只放**运行时装载的 9 个文件**（index.html + polyfill/three/three-globe 的 `.es5.js` + globe.js + 4 张贴图）；`app/src/globe-upstream/` 放**上游原件与构建输入**（`three.min.js`、`three-globe.min.js`、`earth.jpg`、`cities.json`、`downlevel_libs.mjs`），在模块内但 `main` 源集之外，**Gradle 不打包**。
-  ⛔ **两个 ES6 原版是 ES5 产物的唯一再生源**（`downlevel_libs.mjs` 从它们读源转译），也是「产物是否被手工改过」的逐字节 diff 基线 —— **永不删除、也永不移回 assets**（移回即白占 0.62 MiB，删掉则永久丧失可再生性）。
-  ⛔ `downlevel_libs.mjs` 装依赖也必须装在 `globe-upstream/`：**装在 assets 下会被 `mergeDebugAssets` 打进 APK**（2026-10-06 实测一次多 23 MB）。护栏是 `GlobeAssetsHygieneTest`（5 例），`.gitignore` 挡不住打包。
-  ⛔ `cities.json` 看着像运行时数据，其实**从不加载**——城市坐标由 Kotlin 经 `evalJs("WorldGlobe.initCities(...)")` 注入。
-- **Navigation**: single `com.lnh.nasmusictv.ui.MainActivity` (entry class is `.ui.MainActivity`, **not** `com.lnh.nasmusictv.MainActivity` — `am start -n com.lnh.nasmusictv/.ui.MainActivity`) with a manual `when(currentScreen)` switch (`Screen` enum in `data/model/Screen.kt`) — no Jetpack Navigation despite the `navigation-compose` dependency. Five-level BACK (`MainActivity.kt`): immersive-mode exit fullscreen (Level 0) → close dialog (Level 1) → list scroll-to-top (Level 1.5) → navigate back to NowPlaying (Level 2) → exit confirm (Level 3).
+### 2.4 单测现状
+- `app/src/test/`：**241 个 `*Test.kt` / 2427 例**（JVM 单测，含 Robolectric）。`app/src/androidTest` **0 文件** —— 无 Instrumentation 测试。
+- 增量跑显示 "up-to-date" 时**不会真正执行测试**，验数必须带 `--rerun-tasks`。
+- 目标类隔离：`--tests "*PinyinUtilsTest"` 正常。
+- **测试从磁盘读自身源码做契约校验时，源码根必须按真实包名 `com/lnh/nasmusictv/` 拼**（旧路径 `com/nasmusic/tv/` 会导致整批 `FileNotFoundException`，曾造成 288 例失败）。
+- `NasMusicApp` 在 Robolectric 下**会真跑 `onCreate` 并读写 Room** —— 这是既定模式，不是 bug。
 
-## Non-obvious constraints
+### 2.5 CI（`.github/workflows/build.yml`，3 个 job）
+| job | 触发 | 内容 |
+|-----|------|------|
+| `build` | push `main`/`develop`、tag `v*`、PR→`main` | `assembleRelease` + 上传 APK + Release |
+| `test` | — | `testDebugUnitTest`，失败时 dump 完整断言文案并上传 XML |
+| `lint` | — | `lintDebug`（**阻塞**，0 error 为基线，warning 不阻塞） |
 
-- **GBK encoding gotcha** (`util/EncodingUtils.kt`): Jellyfin may store GBK ID3 bytes as if UTF-8. `utf8Body()`/`fixEncoding()` attempt GBK fallback when U+FFFD / Greek / Cyrillic chars appear. Some cases are unrecoverable client-side (already-encoded Unicode codepoints) — don't assume you can fully fix artist-name mojibake.
-- **Pinyin search** uses TinyPinyin (`com.github.promeg:tinypinyin`), chosen specifically because the min SDK is API 22 and `android.icu.Transliterator` needs API 26+. Do not swap back to ICU-based pinyin.
-- **Cleartext traffic** is enabled (`usesCleartextTraffic=true`) for local NAS HTTP.
-- **设备支持：电视 + 手机都支持，手机恒横屏**（2026-10-28 竖屏整体下线后更新，此前写作「方向不锁定」与现实现不符）。`AndroidManifest.xml` 三个 feature 全部 `required="false"`：`android.software.leanback`、`android.hardware.touchscreen`、`android.hardware.screen.portrait`（注释即写着 "both TV and phone supported"）；`MainActivity` 是 `screenOrientation="sensorLandscape"` —— **应用强制横屏，不存在竖屏形态**（原竖屏专属组件 PhoneTopBar/PhoneNavBar/MiniPlayer、方向设置项、`PhonePortrait` 分支已全部删除，`UiMode` 缩为 `TV / PhoneLandscape` 两值；护栏：`ScreenUiModeCoverageTest` 扫描竖屏残留标识符、`UiModeTest` 断言 deriveUiMode 只按设备判定）。核对手段：`aapt2 dump badging <apk> | grep -i "sdkversion\|native-code"`（会打印 `uses-feature-not-required`）。历史设计见 `docs/archive/phone-support-plan.md`、`docs/archive/phone-media-display-plan.md`。
-- **ProGuard**: release build minifies + shrinks. Rules in `proguard-rules.pro` keep `data.model`, `data.prefs`, `backend`, Gson, ExoPlayer. A prior release crash (v2.5.1) came from Gson type erasure under R8 — keep those `-keep` rules when adding serialized models. `Log.d/v` are stripped in release via `-assumenosideeffects`; **注意 `AppLog.d/i/w` 另有 `if (BuildConfig.DEBUG)` 守卫，release 下 R8 会连字符串常量一起折掉（`AppLog.e` 无守卫、必然保留）**——用 dex 字符串验 R8 存活时别拿 d/i/w 文案当证据。
-- **Multi-ABI**: `arm64-v8a`, `armeabi-v7a`, `x86_64`.
-- **Demucs 人声分离的输出契约**（`player/DemucsSeparator.kt`，2026-09-14 起）：`decodeAudioToTempFile()` 保证**输出恒为 44100Hz 立体声**——单声道源复制成 L/R，非 44100Hz 源由私有类 `LinearResampler` 线性插值归一化。因此 `writeWavHeader()` / `patchWavDataSize()` 无条件用 `SAMPLE_RATE`/`CHANNEL_COUNT` 是安全的；**若日后放开该保证，这两处必须改为接收实际参数**。`totalSamples` 取 `writeFrame()` 的调用次数，不要用「float 数 / 声道数」反推。
-- **Demucs 模型完整性**（`player/ModelDownloadManager.kt`）：`EXPECTED_SHA256` 取自 HuggingFace LFS 的 `oid`（对 LFS 对象而言 `oid` 就是 SHA-256）。下载完成后必须通过 SHA-256 才落盘，加载模型前再由 `verifyModelIntegrity()` 校验一次。**该校验对自定义 URL 同样生效**——自定义源定位是「自建镜像/NAS」，要提供字节一致的文件；换权重必须同步改 `EXPECTED_SHA256`。注意代码下载的是 **fp16** 权重（165,612,636 字节），上游另有 316MB 的非 fp16 版本，两者 SHA 不同。`isModelDownloaded()` 保持「快速判定」定位（可能被主线程调用，166MB 哈希会 ANR），**不要在里加哈希**；其大小阈值已收紧到 **±1%**（`163,956,509 ~ 167,268,762` 字节，原来是 `> size * 0.8`，过宽且无上界）。
-- **ONNX Runtime Java API 坑**：`OnnxValue.getInfo()` 返回的 `ValueInfo` 是**空接口**，shape 只在 `TensorInfo` 上——`value.info.shape` 编译不过，必须 `(value.info as? TensorInfo)?.shape`。另外 `OrtEnvironment.getEnvironment()` 是**进程级单例，绝不能 close**；`OnnxTensor` / `OrtSession.Result` 持有 native 内存（GC 回收不到），必须显式 close。
-- **`onnxruntime-android` 的版本被「minSdk 22」与「16KB 页对齐」双重锁定，不要随手升级**（2026-09-14 实测）：lint 的 `Aligned16KB` 会报这个依赖（1.17.1 的 native 库 `p_align = 4096`）。实测矩阵（`p_align`，AAR 内 4 个 ABI × 2 个库）：**1.17.1** 全 4096 / minSdk 21；**1.20.0** 主库 16384 但 `libonnxruntime4j_jni.so` 仍 4096 / minSdk 21；**1.21.1** 仅 arm64 全对齐 / minSdk 24；**只有 1.29.0 全对齐（16384）/ minSdk 24**。两个必须知道的机制：① lint 的 `PageAlignmentDetector.getIncidentsFromAndroidLibrary` 遍历 AAR 解包目录下**全部 ABI**（不受 `abiFilters` 影响），命中第一个未对齐的库即 `return`，所以**每个依赖只报 1 条**，报告里的「3」是聚合重复；② 1.29.0 的 AAR manifest 要求 **`minSdkVersion 24`**，而本项目是 22——直接改会让 manifest merger 失败，改 minSdk 则砍掉 Android 5.0/5.1/6.0（含创维 5.1.1 开发机，真机回归的基准设备）。**当前有意保持 1.17.1**（是 Warning 非 Error，`targetSdk 34` 下 Play 的 16KB 强制要求尚未触发）。**触发条件**：升 `targetSdk 35` 或上架前必须处理。另外 lint 里那份硬编码的「已知安全依赖」白名单（`isDependencyKnownSafe`）**不含 `com.microsoft.onnxruntime`**，没有绕过路径。完整矩阵与决策记录见 `docs/technical-overview.md` §10.146 的 §七-4 遗留项，依赖声明处的注释在 `app/build.gradle.kts`。
-- **lint 输出里的内部异常栈是既有的**：构建输出中会出现 `LintCliClient.analyzeOnly` → UAST visitor 的异常栈（`docs/archive/verification/verify4.log` 中同样存在）。它不影响报告生成与构建结果，不要当成新引入的问题去排查。
-- **构建前若报 `fileHashes.lock (拒绝访问)`**：`--no-daemon` 并不保证不起守护进程 —— `gradle.properties` 里的 `org.gradle.jvmargs=-Xmx2048m` 会强制 fork 一个**单次守护进程**。该守护进程若卡在退出序列（`PersistentDaemonRegistry.remove` 的锁竞争），会一直持有 `.gradle/<版本>/fileHashes/fileHashes.lock`，后续所有构建都在 `Could not create service of type FileHasher` 处秒失败（约 26s）。**解法：`./gradlew.bat --stop`**（会打印 `1 Daemon stopped`），再重跑。**不要 `rm` 锁文件** —— 在带 safe-delete 包装的环境里 `rm` 失败会把文件留在 Windows「删除挂起」状态，之后任何 open 都返回 `Permission denied`（权限位显示 666 可写也没用），**反而让后续构建全部失败**；`rm` 报 `Device or resource busy` 就已说明有进程持有，去 `--stop` 而不是硬删。
-- **飞牛音乐（fnOS）后端协议**（`backend/impl/FeiniuAdapter.kt` + `FeiniuUrl.kt`，2026-09-14 重写）：唯一权威依据是参考项目 `fn-music-tv`（本地副本 `D:\hxzhang\MyGithubSoftware\NasAudio\fn-music-tv-v1-1-2`），完整提取结果与缺陷对照表见 `docs/archive/feiniu-backend-improvement-plan.md`。**不要再回到第三方逆向文章的猜测端点**。易错点：① 认证头是 **`Authorization: <userToken>`（原始值，无 Bearer）**，不是 `Cookie: music-token=`（后者只在 relay 模式用）；② 登录响应字段是 **`data.userToken`**；③ 分页是 **`page` + `size`**，不是 `limit`；④ ID 全是 **GUID**，参数名是 `albumGUID`/`artistGUID`/`trackGUID`/`playlistGUID`；⑤ 流地址 `track/stream?guid=`（查询参数）、封面 `static/cover?coverId=`（按 **coverId** 而非曲目 ID）；⑥ `duration` **已是毫秒**；⑦ 信封 `{code,msg,data}`，`data` 可为 null；⑧ 默认端口 **5666**（HTTPS 5667），不是 80；⑨ **服务端没有搜索端点**，`searchSongs` 是客户端本地过滤；⑩ 适配器必须在**解析期填充 `Song.streamUrl`**（`FeiniuUrl.streamUrl`）—— 全 app 的 NAS 播放解析只认 `getSongsByIds()` 返回的 streamUrl，置空会让点播「解析失败」（2026-09-15 修复）。
-- **`BackendAdapter.streamHeaders` 的注入链路**（2026-09-14 补齐）：此前该属性**定义了但全仓库无消费方**——Jellyfin/Navidrome 把凭据拼在 URL query 上，所以历史上没暴露；飞牛是第一个必须走请求头的后端。现在由 `BackendRegistry` 在连接成功时向 `BackendAuthHeaders` 绑定 **provider**（每次请求实时读取 `adapter.streamHeaders`；快照形态会漏掉静默重登换新令牌 —— 2026-09-15 改为 provider），再由 `BaiduHttpDataSourceFactory` 的拦截器按 **host 精确匹配**注入（同一客户端同时服务 ExoPlayer 播放与 Coil 封面）。**新增后端若要走请求头，只需覆写 `streamHeaders`，不要另起炉灶**；也不要放宽 host 匹配，否则令牌会随 302 泄漏到 CDN。
-- **构建环境**：本机 Gradle fork 出的子进程普遍起不来（AAPT2 守护进程、Kotlin 编译守护进程），因此构建必须加 `--no-daemon -Pkotlin.compiler.execution.strategy=in-process`；**但测试 worker 例外——它已可用**（见上文「单测在本机可以跑」）。遇到 worker 秒死时先 `./gradlew.bat --stop` 释放卡死的守护进程再重试，而不是直接绕道。`kotlin-standalone-verify` 技能仍适用于「只想验证一个纯逻辑类、不想付整轮 Gradle 代价」的场景，但不再是**必需**的绕行手段。
+**签名是双模 + fail-fast**：仓库有 `SIGNING_KEYSTORE_BASE64` / `SIGNING_STORE_PASSWORD` / `SIGNING_KEY_ALIAS` / `SIGNING_KEY_PASSWORD` 时用真 key；一次性 `ci-keystore.jks` 回退**只用于 `pull_request`**（fork PR 拿不到 secrets）。`push`/`tag` 下 secrets 或 `CRYPTO_PASSPHRASE` 缺失会**立即 `exit 1`**。写出的 `keystore.properties` 必须含 `cryptoPassphrase` 行，否则 `packageRelease` 的 guard 会让构建失败。
+本地 release 从**项目根**读 `keystore.properties`，`storeFile` 是**项目根相对路径**（如 `release-key.jks`），`app/build.gradle.kts` 用 `rootProject.file(...)` 解析（不是 `project.file(...)`）。
 
-## Conventions
+---
 
-- Git/branch/commit rules live in `.opencode/rules.md` (conventional-commit prefixes, `main`/`dev`/`feat/*`, and the rule to update `CHANGELOG.md` + `docs/technical-overview.md` §10 after verified changes). Follow that file; don't duplicate here.
-- Implementation/change history is recorded in `docs/technical-overview.md` §10 — only verified changes. For change context, `docs/code-review-*.md` and `CHANGELOG.md` are more current than prose elsewhere.
-- Tests: `app/src/test/`, Robolectric JUnit4. Run targeted: `./gradlew.bat test --tests "*PinyinUtilsTest"`.
-- **浏览器原型（`docs/*.html`）的验证脚本**在 `docs/archive/verification/scripts/`，与本目录的审计脚本同处。E43 海边那套（2026-10-03 归档）：
-  `seaside_wave_harness.js`（**帧驱动 harness**：`vm` 沙箱桩掉 DOM/canvas/`Path2D`，打桩 `requestAnimationFrame` 驱动**真实页面代码**，并注入探针读浪队列闭包状态 —— 几何/时序类断言全靠它）、
-  `seaside_hole_continuity_check.js`、`seaside_caustic_geom_check.py`、`seaside_visual_driver.mjs`（真浏览器 CDP 驱动：`snap`/`series`/`waterline`/`cost`，rAF 打桩、确定性推进）、
-  `html_syntax_check.js`。
-  ⭐ **Kotlin 端的单测可以直接照抄 harness 的断言口径**（它测的都是纯函数：位置映射、噪声连续性、cull 阈值、每帧位移上限），不需要图形设备。
-  ⚠️ 这类 harness 的探针**必须挂在目标变量赋值之后**：挂错作用域会读到上一帧的残留值，量出「间距恒等于 0」这类假结论（真实发生过）。
-- **E44「明月」云场基线：数字只能由脚本再生，⛔ 不许手抄**（`docs/archive/verification/scripts/moonlit_cloud_golden.js` → `app/src/test/…/MoonlitCloudBaseline.kt`）。
-  该脚本在 `vm` 沙箱里跑 `docs/archive/moonlit-preview.html` 的**原文**（播种 / `layoutPuffs` / `stepClouds` / `occlusion`），再生成 G3 逐位对账用的基线与 `occl` **分布**五项。
-  ⚠️ 改云场数学（rng 调用次序、包络式、`OCCL_PAD`）必须重跑它并一起提交再生结果；把数**抄进 Kotlin 注释或测试**就是偏差 **D24** 的重演 ——
-  那次的成因是一个 `const minDim` 遮蔽了沙箱全局，缕尺寸按 0 算，得到的假峰值（`occl ≤ 0.33`）在文档里活了整个定稿流程。
-  脚本自带两条防退化自检（`minDim` 没进上下文全局就抛、包络半轴全 0 就抛），⚠️ 探针若跨作用域读变量，一律**赋在全局**再读。
-- ⛔ **绝不用 PowerShell 对 UTF-8 源文件做文本往返**（`(Get-Content -Raw) -replace … | Set-Content`）。它按控制台代码页（CP936）读、按 UTF-8 写回，会把中文注释全变成乱码，并**吞掉紧邻的 ASCII 标点与换行** ⇒ 引号/括号/换行被破坏、语法直接崩。批量替换一律用 `edit`/`write` 工具，或 `python -c` 配 `encoding='utf-8'`。（2026-10-03：这条规则当时已写进脚本文件头，我仍然违反它，毁掉了一个 2400 行、未提交、无备份的原型文件。）
-- **Doc writing style (user-mandated, 2026-09-20)**: `README.md` lists **features only** — user-facing, concise, drop minor/implementation-level items. `CHANGELOG.md` entries state **what was done only** — one line each, **no root cause, no implementation detail, no source line numbers, no verification narrative**; all of that belongs in `docs/technical-overview.md` §10.N. Touch **only the current version's section** — never rewrite historical sections.
-- ⛔ **Never `reject()` in `MediaSession.Callback.onConnect`** (root cause of "car Bluetooth media buttons dead", §10.165). System-side controllers (Bluetooth AVRCP / SystemUI / car) arrive via the framework `MediaController` and Media3 routes them through `MediaSessionLegacyStub.tryGetController() → onConnect`; rejecting makes Media3 drop the command silently. Put the security boundary in `setAvailableSessionCommands` instead — and since that is **strict set membership** (not additive), only ever **add to** `DEFAULT_SESSION_AND_LIBRARY_COMMANDS`. Gate: `MediaSessionAccessPolicyTest`. ⚠️ Only reproducible in **release** builds.
+## 3. Architecture (verified against source)
 
-### Doc lifecycle (archive rule — user-mandated, 2026-09-20)
+### 3.1 DI
+**无 DI 框架、无 `getInstance()` 单例**：`NasMusicApp` 在 `onCreate()` 里直接构造并持有全部全局实例（`backendRegistry` / `appPreferences` / `playerManager` / `networkMusicManager` / `songDownloadManager` …）。取用方式是把 `Application` 转型为 `NasMusicApp`（`MainViewModel` 即 `app as NasMusicApp`）。
 
-`docs/` root holds **only active docs** — after the third pass it is down to **2 living docs**
-(`technical-overview.md`, `conventions-adaptive-ui.md`). Completed ones move to `docs/archive/`;
-external-facing articles (zhihu etc.) live in `docs/articles/`.
+### 3.2 后端适配器
+`BackendAdapter` 接口；实现位于 `backend/impl/`：
+`JellyfinAdapter`（REST）、`NavidromeAdapter`（Subsonic 兼容）、`SubsonicAdapter`（Subsonic REST，Token+Salt）、`DaoliyuAdapter`（社区后端，端点反推）、`FeiniuAdapter`（fnOS）、`WebDavAdapter`、`SmbAdapter`。
+`BackendRegistry` 注册 **7 种类型**，只把当前适配器**放在内存**里（重启后凭 `AppPreferences` 重连）；`testConnection()` 构造临时适配器，**不污染当前状态**。
 
-A doc is **archivable** when **both** hold:
+### 3.3 播放
+`PlaybackService`（Media3 `MediaLibraryService`）创建 ExoPlayer 并交给 `PlayerManager`。
+**进度不是 ExoPlayer 回调驱动的**，而是 `PlayerManager` 里 1000ms `Handler` 轮询。
+网络歌曲在播放前没有 resolved `streamUrl` —— `PlayerManager.onNeedResolveStreamUrl` 通知 `MainViewModel` 去解析再重放。
+`PlaybackService` 同时注册 `androidx.media3.session.MediaLibraryService` 与 `android.media.browse.MediaBrowserService` 两个 action（缺前者 Media3 客户端找不到，缺后者平台 MediaBrowser / Android Auto 找不到）。
 
-1. **It is not a living doc.** Only the continuously-maintained index/convention docs stay
-   forever: `technical-overview.md` (§10.N keeps growing) and `conventions-adaptive-ui.md`.
-   ⚠️ A doc being the designated recovery source for a shipped algorithm (the vocal-removal
-   DSP doc, §10.152) does **not** keep it in root — the role survives the move, since archiving
-   is a pure `git mv` with references rewritten.
-2. **Its fate is settled** — either ✅ shipped, or ❌ permanently abandoned.
+### 3.4 网络音乐（与 NAS 后端独立）
+`backend/network/`：`MetingApiService`（多端点回退、302 直链解析、播放地址 LRU 500 `PLAY_URL_CACHE_MAX`）、`NeteaseOpenApi`（网易云免鉴权原生接口，失败回落 Meting）、`JamendoService`（CC 音乐）、`baidu/`（百度网盘 OAuth + 流式）、`mv/`（Bilibili MV）。
+聚合入口 `SearchAggregator`（拼音匹配已是**默认主路径**）、`NetworkArtistExpansion`（艺人全量作品）、`PlayabilityProbe`（可播探测）。
+收藏能力**只在 NAS 适配器**，`NetworkMusicManager` 无收藏。
 
-   **(a) Shipped** — judged by `CHANGELOG.md` / `docs/technical-overview.md`, and by whether the
-   implementation exists in source (`SubsonicAdapter.kt`, `KaraokePlaybackScreen.kt`, …).
-   ⚠️ **Never** trust the doc's own status header — headers go stale. The third pass archived 13
-   docs whose headers read "待评审 / 可开发状态 / 方案提案 / Phase 7 未开始 / 含待所有者决策项"
-   while the work had already shipped and the doc was simply never back-filled.
+### 3.5 电台与天气
+- `backend/radio/`：`RadioBrowserClient`（公共电台目录）、`RadioSongScorer`（评分）、`SmartRadioManager`
+- `backend/weather/`：`WeatherApi`（OpenWeatherMap）、`WeatherRadioManager`（按天气心情匹配曲库）。为让天气电台在**无 NAS 连接**时也能工作，`BackendAdapter` 被做成可空。
 
-   **(b) Abandoned** — the owner has ruled the goal dead (upstream closed third-party access,
-   no public API endpoint exists, …). Archiving is **not** a success badge: a dead plan left in
-   `docs/` root keeps misreading as "still doable". A merely *unscheduled* active plan is **not**
-   this case and stays put.
+### 3.6 歌词
+`LyricsManager`（在 `MainViewModel` 构造，依赖 `context` / `backendRegistry` / `networkMusicManager`）**确实调用** `BackendAdapter.getLyrics()`（Jellyfin 歌词端点）。
+获取优先级：本地 `.lrc` 侧车 → 内嵌 ID3 歌词 → NAS 后端 API → 持久缓存 → 网络模糊匹配（标题+艺人）。
+`LrcParser` 解析标准 LRC + 增强 LRC + **内嵌逐字时间戳**（karaoke `<mm:ss.xx>`），供 `KaraokeLyricsView` 渲染逐字高亮。
+⛔ **未实现 QRC / kvly 解析**（源码零命中）；酷狗 krc 走 base64 解码。
 
-   ⚠️ **If the doc still lists open owner-decision items at archive time, record them explicitly**
-   in the `docs/archive/README.md` row (the 2026-09-20 refactoring plan carried two: the R-5
-   four-phase split and F-8 download keep-alive). Archiving means "no longer maintained as an
-   active plan" — silently burying open decisions is the failure mode to avoid.
+### 3.7 可视化
+`visualizer/`（`fx` / `renderers` / `photo`）。以 **Compose Canvas 过程化绘制**为主，两例用 WebView（`WorldGlobeRenderer` three-globe、`MoonlitRenderer` 解码 `assets/globe/moon.jpg`）。**无 OpenGL/Shader，无 ONNX/karaose 模型**。
+音频源统一来自 `SpectrumRepository`（`AudioFrame` 的唯一写入方，由 `PlayerEqualizer` 注入）。
+`VisualizerRendererFactory` 注册 **26 套主题**（`VisualizerTheme` 枚举在 `data/model/AppSettings.kt:125`；新增 = 加 Renderer + factory 分支）。旧的 2D `WorldRenderer` 已删除，E41「World」只由 3D `WorldGlobeRenderer` 提供 —— **不要复活 2D 世界渲染器**。
+画质门控 `VisualQuality.supports(theme)`：`BASIC` 全档可选；`ADV` 需「不消耗粒子预算 **或** `maxParticles > 0`」（⛔ 不要再用 `maxParticles > 0` 当 ADV 的代理条件）；`ULTRA` 仅 `allowFramebuffer` 为真的档提供。
+`VisualizerRendererFactory.create(theme, context)` 需要 `context` 的原因：`MOONLIT` 分支要解 `assets/globe/moon.jpg`，必须传 `context.applicationContext`（**绝不能传 Activity**）。
+中英双语主题名由 `VisualizerThemeStringsGateTest` 把关 —— 缺 `values-en` key 编译期不报错、渲染期才崩。
 
-> ⛔ **A `CHANGELOG` grep alone is NOT sufficient** — it necessarily misses two classes:
-> **changed-approach** docs (the feature shipped in a different form, so the original keywords
-> never appear) and **abandoned** docs (nothing ever shipped, so there is nothing to find).
-> For those, **ask the owner** — never conclude "not shipped" from a zero-hit grep. All 13 docs
-> the second pass kept (as either "unshipped" or "living") were overturned by exactly this mistake.
-> ⚠️ Write examples **without** the `docs/…md` path form, otherwise this very section
-> becomes a reference and pollutes the reference graph.
+### 3.8 E41 资产分两处（不要合回去）
+- `app/src/main/assets/globe/`：**运行时**装载的 9 个文件（index.html + polyfill/three/three-globe 的 `.es5.js` + globe.js + 4 张贴图）
+- `app/src/globe-upstream/`：上游原件与构建输入（`three.min.js`、`three-globe.min.js`、`earth.jpg`、`cities.json`、`downlevel_libs.mjs`），在模块内但 `main` 源集之外，**Gradle 不打包**
+- ⛔ 两个 ES6 原版是 ES5 产物的**唯一再生源**，也是 diff 基线 —— **永不删除、也永不移回 assets**（移回即白占 0.62 MiB）
+- ⛔ `downlevel_libs.mjs` 装依赖必须装在 `globe-upstream/` —— 装在 assets 下会被 `mergeDebugAssets` 打进 APK（实测一次多 23 MB）。护栏 `GlobeAssetsHygieneTest`；`.gitignore` 挡不住打包
+- ⛔ `cities.json` **从不加载** —— 城市坐标由 Kotlin 经 `evalJs("WorldGlobe.initCities(...)")` 注入
 
-> ⛔ **Being referenced is NOT a blocker.** Source KDoc and `AGENTS.md` cite plan docs heavily,
-> but archiving does **not** break those citations — the move rewrites every inbound reference
-> in the same pass (`docs/<name>` → `docs/archive/<name>`), including `app/src/**` KDoc,
-> `AGENTS.md`, `CHANGELOG.md` and cross-doc links. Treating "referenced" as a veto is
-> **over-conservative** and leaves finished docs cluttering `docs/` root. The 2026-09-20
-> second pass archived 6 such docs and synced 57 references across 41 files with zero
-> dead links.
+### 3.9 导航
+单 Activity `.ui.MainActivity`（**不是** `com.lnh.nasmusictv.MainActivity`；`am start -n com.lnh.nasmusictv/.ui.MainActivity`）+ 手工 `when(currentScreen)` 切换（`Screen` 枚举在 `data/model/Screen.kt`，14 个页面）。
+⛔ 工程**没有任何 `androidx.navigation` 依赖，也没有 Navigation 组件** —— 需要新页面就加 `Screen` 枚举值 + `AppRoot` 分支，不要引框架。
+BACK 五级：`MainActivity` 内实现 —— 退出全屏(0) → 关对话框(1) → 列表滚回顶(1.5) → 退回 NowPlaying(2) → 退出确认(3)。
 
-When archiving:
+---
 
-- Use `git mv` (history preserved, no content deletion) — never `rm`.
-- **Rewrite every inbound reference** `docs/<name>` → `docs/archive/<name>`.
-  ⚠️ The sweep is **`docs/`-prefixed only** — a **bare filename** reference
-  (e.g. a name listed in this very section) is **not** matched and must be swept by hand.
-  Grep the bare basename after the move. Then re-run the dead-link check — a zero-hit
-  check confirms nothing broke.
-- Add a row to `docs/archive/README.md` (doc / reason / superseding record, **plus any open
-  owner-decision items**).
-- Rollback is a single `git checkout -- docs`.
+## 4. Non-obvious constraints
 
-See `docs/archive/README.md` for all three 2026-09-20 passes (60 files moved out of `docs/` root,
-177 references synced).
+### 4.1 平台形态
+- **TV-only**：`AndroidManifest` 三个 feature（`leanback` / `touchscreen` / `screen.portrait`）全 `required="false"`（为兼容非认证盒子与上架），但代码是**纯 TV 横屏**。
+- `MainActivity` = `screenOrientation="sensorLandscape"`，运行时不动态改 `requestedOrientation`。
+- `configChanges` 刻意**不含** `uiMode` / `density` / `layoutDirection`（会影响深色模式、字体缩放、RTL 的重建时机）。
+- ⛔ **Leanback 是死依赖**：`androidx.leanback:leanback:1.0.0` 声明在 `app/build.gradle.kts:231`，但**全源码零 `androidx.leanback` import**。UI 是 Compose TV。保留原因疑似间接提供 `fragment`，但 `fragment-ktx:1.6.2` 已显式声明。
 
-### Repo-root hygiene — temp / log files (user-mandated, 2026-09-20)
+### 4.2 焦点视觉（TV 最易复发的 UI 缺陷）
+- 焦点相关视觉**一律**用 `shouldShowFocusVisuals()`（`ui/components/FocusIndicator.kt`），⛔ **不要**用 `isTVDevice()`。
+  `isTVDevice()` 纯靠 `hasSystemFeature(leanback | type.television)` 嗅探，在非认证盒子上双双 false ⇒ 焦点环/缩放/容器色全关，用户只能按确认键反推焦点位置。
+  正确判据是「用户是否在用按键导航」：① 无触摸屏 ② 电视 feature ③ **存在 `SOURCE_DPAD` 输入设备**（⭐ 非认证盒子进场即命中，无需先按键）④ 进程内收到过方向键。四条任一成立即显示。
+- `shouldShowFocusVisuals()` 被 **135+ 组件在组合期调用**，而 `InputDevice.getDeviceIds()` 是 binder 调用 ⇒ **必须缓存**。⛔ 不能写成 `remember { }`（每个调用点各一份缓存，首屏仍 135 次 binder）；放 `object by lazy`。
+- 误判面：部分 ROM/模拟器给内建触摸数字化器顺带多报 source 位 ⇒ `isRemoteNavigationDevice(hasDpad, isTouchDigitizer) = hasDpad && !isTouchDigitizer`（排除「既支持 DPAD 又是触摸数字化器」的设备）。真正的遥控器是**独立** input device，不会同时声明 `SOURCE_TOUCHSCREEN`。
+- `activeFocus = isFocused && shouldShowFocusVisuals()`；缩放、焦点环、`focusedContainerColor`、`focusedContentColor` 全走它。
+- ⛔ **焦点环必须画在 `.background(...)` 之后**（链尾）。Compose 绘制顺序 = 修饰符链顺序，越靠前越靠下；边框写在背景之前会被不透明容器色盖住 ⇒ 全应用看不见焦点框（与对比度无关）。用 `Modifier.focusRing(shape, color, visible)`。
+- `onFocusChanged { }` 的 lambda **捕获本次组合的值**，焦点刚变时读到的还是旧值。需要立即生效的动画（如 1.15 倍缩放）必须读 `state.hasFocus && tvDevice`，不能读外层派生的 `activeFocus`。
+- ⛔ **内容色契约**：`androidx.tv.material3.LocalContentColor` 默认值是 **`Color.Black`**，而 tv-material3 的 `Icon`/`Text` 都会回退到它。`FocusableSurface` 早期只提供自有的 `LocalFocusableContentColor` ⇒ 内部没显式写 `tint=`/`color=` 的 `Icon`/`Text` 全是**黑字压深底**。
+  **任何自建容器组件**（Surface/Card/Button 封装）只要内部可能放裸 `Icon`/`Text`，就**必须同时**下发 `LocalFocusableContentColor` 与 `LocalContentColor`。门禁 `FocusableSurfaceColorContractTest`。
 
-⛔ **Every log / temp / debug artifact goes in its designated directory — never in the repo root.**
+### 4.3 已塌缩的自适应 helper（TV-only 收敛的残留 API）
+竖屏下线后下列 helper 变成**恒等实现**，旧文档里的缩放数学全部失效：
+| helper | 现状 | 说明 |
+|--------|------|------|
+| `portraitTouchTarget(landscape)` | **恒返回入参** | 旧「物理 44dp ⇒ Compose 56dp」算术已不适用；TV 热区下限用 `TV_TOUCH_TARGET = 56dp` |
+| `responsiveDialogSize(w)` | **= `Modifier.width(w)`** | `scrollable` 参数已随竖屏滚动对话框移除 |
+| `UiMode` | **只有 `TV`** | `LocalUiMode` 恒 TV，`deriveUiMode()` 恒返回 TV |
+| `adaptiveColumns(tv, phonePortrait, medium)` | **仍按 `screenWidthDp` 分档** | `≥1000→tv` / `≥600→medium` / 其余→`phonePortrait`；TV 实机 ≥1000 恒走 `tv` 档，`phonePortrait` 形参在 TV 上是死参 |
+| `TV_TOUCH_TARGET_DP` | `56f` | `UiModeTest` 仍在纯 JVM 下断言该算术 |
 
-| Kind of file | Belongs in |
-|---|---|
-| Build / test / adb logs, debug dumps, one-off scratch (`*.log`, `diag.txt`, `defex.txt`, …) | **`logs_temp/`** |
-| Agent-produced images / previews (screenshots, icon renders, verify shots) | **`output/`** |
-| Gradle build output | `build/` (Gradle-managed) |
-| Agent runtime internal state (task registry, scratch) | `.box-agent/` |
-| **Reusable** audit / gate / measurement scripts (cited by living docs) | **`scripts/`** — run them from the **repo root** (`python scripts/xxx.py`), because their default paths are CWD-relative |
+新增控件仍用 `portraitTouchTarget(...)` 包裹（保持调用点稳定），但**不要**再基于它做缩放换算。
 
-- The repo root holds **only** tracked project files: build config (`build.gradle.kts`,
-  `settings.gradle.kts`, `gradle.properties`, `gradlew*`), docs (`README.md`, `CHANGELOG.md`,
-  `AGENTS.md`), `.gitignore` / `.gitattributes`, signing files (`keystore.properties*`,
-  `release-key.jks`, `local.properties`). Helper scripts do **not** belong in the root any more —
-  `audit_small_touch_target.py` and `check_chinese.py` moved to `scripts/` on 2026-10-16, and the
-  one-shot `patch_artists.py` went to `docs/archive/`.
-- When redirecting build output, **target `logs_temp/`** — e.g.
-  `./gradlew.bat assembleRelease *> logs_temp/release_build.log` — never the bare root.
-- ⚠️ `.gitignore` has a `# CI / debug leftovers` block (`build_*.log`, `diag.txt`, `defex.txt`,
-  `release_build.log`, …). It exists **because this kept happening** — treat it as a safety net,
-  not a licence. Gitignored ≠ acceptable; put the file in `logs_temp/` in the first place.
-- ⚠️ Agent session dirs named `20??-??-??-????????/` (`<date>-<session-id prefix>`) are created by
-  the agent runtime in the CWD and are gitignored. They are **not source** — clean them out when
-  found (they hold throwaway screenshots).
-- `logs_temp/` is gitignored and should be **emptied periodically**; it is a scratch directory,
-  not a place to accumulate.
+### 4.4 拼音
+用 TinyPinyin（`com.github.promeg:tinypinyin:2.0.3`），**刻意选择**它是因为 `minSdk 22` 而 `android.icu.Transliterator` 需要 API 26+。⛔ 不要换回 ICU 方案。
 
-## Key directories
+### 4.5 编码
+**GBK 乱码陷阱**（`util/EncodingUtils.kt`）：Jellyfin 可能把 GBK ID3 字节按 UTF-8 存。`utf8Body()`/`fixEncoding()` 在出现 U+FFFD / 希腊字母 / 西里尔字母时尝试 GBK 回退。部分情况在客户端**不可恢复**（已被编码成 Unicode 码点）—— 不要以为能彻底修好艺人名乱码。
 
-```
-backend/impl/          active Jellyfin/Navidrome adapters (raw OkHttp)
-backend/network/       Meting-API network music (independent of NAS)
-backend/weather/       OpenWeatherMap + weather radio
-lyrics/                LyricsManager, LrcParser, LyricsNetworkProvider
-player/                PlayerManager, PlaybackService
-ui/screens/            NowPlaying, Library, Queue, Settings, ServerConnect,
-                       NetworkScreen, Equalizer, *Detail, network/ subpackage
-util/                  AppLog, EncodingUtils, PinyinUtils, ArtistSplitter, ...
-data/model/            all data classes (Song, Album, Artist, Playlist, Genre,
-                       Lyrics*, UiState, Screen, Weather*, Network*)
-```
+### 4.6 清晰文本
+`usesCleartextTraffic="true"`（局域网 NAS HTTP 需要）。
 
+### 4.7 ProGuard / R8
+release 开启 minify + shrinkResources。`proguard-rules.pro` 保留 `data.model` / `data.prefs` / `backend` / Gson / ExoPlayer。v2.5.1 曾因 **Gson 类型擦除在 R8 下崩溃** —— 新增序列化模型时保留对应 `-keep` 规则。
+`Log.d/v` 在 release 被 `-assumenosideeffects` 剥掉；⛔ **注意 `AppLog.d/i/w` 另有 `if (BuildConfig.DEBUG)` 守卫**，release 下 R8 会连字符串常量一起折掉（`AppLog.e` 无守卫必然保留）—— 用 dex 字符串验 R8 存活时**别拿 d/i/w 文案当证据**。
 
-## 2026-09-09 深度审查与修复纪要
+### 4.8 MediaSession
+⛔ **绝不在 `MediaSession.Callback.onConnect` 里 `reject()`**（车机蓝牙媒体键失效的根因）。系统侧控制器（蓝牙 AVRCP / SystemUI / 车机）经框架 `MediaController` 到达，Media3 走 `MediaSessionLegacyStub.tryGetController() → onConnect`，reject 会让命令被**静默丢弃**。
+安全边界放在 `setAvailableSessionCommands`；它是**严格集合成员判定**（非增量），因此**只能往 `DEFAULT_SESSION_AND_LIBRARY_COMMANDS` 里加**。门禁 `MediaSessionAccessPolicyTest`。⚠️ 该问题**只在 release 构建可复现**。
 
-- 全量审查报告（15 项发现 + 修复明细）由审查会话产出：NAS-Music-TV-代码审查报告.html。本文只补正最关键的滞后信息：
-- 后端已不止 Jellyfin/Navidrome：共 5 个（+Subsonic/道理鱼/飞牛）；另有百度网盘源、离线下载、K 歌（ONNX 人声分离）、MTV、天气电台、手机遥控/扫码传输等大模块
-- 安全基线：TLS 已恢复系统默认证书校验（2026-09-09 移除 6 处 trust-all，勿再引入）；凭据 AES-GCM 加密存储；本地 HTTP 服务无鉴权是所有者接受的取舍（家庭局域网场景）
-- 已确认的设计取舍（勿"修复"）：gradle wrapper 指向本地 file://（离线构建）、全局 usesCleartextTraffic（用户自填任意 NAS http 地址所需）、连接页默认预填开发者局域网 IP
-- ServerConnectScreen 的账号密码硬编码已清除；历史提交中的密码已泄露，必须轮换
+### 4.9 人声分离（Demucs）
+- **输出契约**（`player/DemucsSeparator.kt`）：`decodeAudioToTempFile()` 保证输出**恒为 44100Hz 立体声**（单声道复制成 L/R，非 44100 由 `LinearResampler` 线性插值归一化）。因此 `writeWavHeader()`/`patchWavDataSize()` 无条件用 `SAMPLE_RATE`/`CHANNEL_COUNT` 是安全的 —— ⛔ 若日后放开该保证，这两处必须改为接收实际参数。`totalSamples` 取 `writeFrame()` 的调用次数，⛔ 不要用「float 数 / 声道数」反推。
+- **模型完整性**（`player/ModelDownloadManager.kt`）：`EXPECTED_SHA256` 取自 HuggingFace LFS 的 `oid`（对 LFS 对象而言 `oid` 就是 SHA-256）。下载完成必须过 SHA-256 才落盘，加载前再 `verifyModelIntegrity()` 校验一次。**该校验对自定义 URL 同样生效** —— 自定义源要提供字节一致的文件；换权重必须同步改 `EXPECTED_SHA256`。代码下载的是 **fp16** 权重（165,612,636 字节），上游另有 316MB 非 fp16 版本，两者 SHA 不同。`isModelDownloaded()` 保持「快速判定」（可能被主线程调用，166MB 哈希会 ANR），⛔ **不要在里加哈希**；大小阈值已收紧到 **±1%**（`163,956,509 ~ 167,268,762` 字节）。
+- 模型 `htdemucs_ft_vocals.onnx`（FP16 ~166MB，4 stems：drums/bass/other/vocals），默认 AWS CDN 镜像，设置页可下载。
+
+### 4.10 ONNX Runtime
+- **Java API 坑**：`OnnxValue.getInfo()` 返回的 `ValueInfo` 是**空接口**，shape 只在 `TensorInfo` 上 —— `value.info.shape` 编译不过，必须 `(value.info as? TensorInfo)?.shape`。`OrtEnvironment.getEnvironment()` 是**进程级单例，绝不能 close**。`OnnxTensor` / `OrtSession.Result` 持有 native 内存（GC 收不到），必须显式 close。
+- ⛔ **版本被「minSdk 22」与「16KB 页对齐」双重锁定，不要随手升级**：lint `Aligned16KB` 会报（1.17.1 的 native 库 `p_align = 4096`）。
+  实测矩阵（`p_align`，AAR 内 4 ABI × 2 库）：**1.17.1** 全 4096 / minSdk 21；**1.20.0** 主库 16384 但 `libonnxruntime4j_jni.so` 仍 4096 / minSdk 21；**1.21.1** 仅 arm64 对齐 / minSdk 24；**只有 1.29.0 全对齐** / minSdk 24。
+  机制：① lint 的 `PageAlignmentDetector` 遍历 AAR 解包目录下**全部 ABI**（不受 `abiFilters` 影响），命中第一个未对齐即 `return` ⇒ 每个依赖只报 1 条；② 1.29.0 要求 `minSdkVersion 24`，直接改会让 manifest merger 失败，改 minSdk 则砍掉 Android 5.0/5.1/6.0（含创维 5.1.1 真机回归基准设备）。
+  **当前有意保持 1.17.1**（Warning 非 Error，`targetSdk 34` 下 Play 的 16KB 强制要求未触发）。**触发条件**：升 `targetSdk 35` 或上架前必须处理。
+- ONNX 仅用于**人声分离（Demucs）**与**人脸检测（YuNet）**，可视化与歌词不用 ONNX。
+
+### 4.11 认证头注入链路
+`BackendAdapter.streamHeaders` 曾**定义了但全仓库无消费方**（Jellyfin/Navidrome 把凭据拼在 URL query 上）。飞牛是第一个必须走请求头的后端。
+现由 `BackendRegistry` 在连接成功时向 `BackendAuthHeaders` 绑定 **provider**（每次请求**实时读取** `adapter.streamHeaders` —— 快照形态会漏掉静默重登换新令牌），再由 `BaiduHttpDataSourceFactory` 拦截器按 **host 精确匹配**注入（同一客户端服务 ExoPlayer 播放与 Coil 封面两条链路）。
+⛔ **新增后端若要走请求头，只需覆写 `streamHeaders`，不要另起炉灶**；也不要放宽 host 匹配，否则令牌会随 302 泄漏到 CDN。
+
+### 4.12 飞牛（fnOS）后端协议
+`backend/impl/FeiniuAdapter.kt` + `FeiniuUrl.kt`。⛔ 不要回到第三方逆向文章的猜测端点。
+易错点：① 认证头是 **`Authorization: <userToken>`（原始值，无 Bearer）**，不是 `Cookie: music-token=`；② 登录响应字段是 **`data.userToken`**；③ 分页是 **`page` + `size`**，不是 `limit`；④ ID 全是 **GUID**，参数名 `albumGUID`/`artistGUID`/`trackGUID`/`playlistGUID`；⑤ 流地址 `track/stream?guid=`（查询参数）、封面 `static/cover?coverId=`（按 **coverId** 而非曲目 ID）；⑥ `duration` **已是毫秒**；⑦ 信封 `{code,msg,data}`，`data` 可为 null；⑧ 默认端口 **5666**（HTTPS 5667），不是 80；⑨ **服务端没有搜索端点**，`searchSongs` 是客户端本地过滤；⑩ 适配器必须在**解析期填充 `Song.streamUrl`**（`FeiniuUrl.streamUrl`）—— 全 app 的 NAS 播放解析只认 `getSongsByIds()` 返回的 streamUrl，置空会让点播「解析失败」。
+
+### 4.13 反向遥控与本地 IP
+- 6 个 NanoHTTPD 服务器：`LocalInputServer`(18080)、`BackupTransferServer`(18081)、`RemoteControlServer`(18082)、`ModelTransferServer`(18083)、`PlaylistUploadServer`(18084)、`ServerConfigTransferServer`(18085)。`RemoteControlServer` **仅在进入 K 歌/MTV 模式时**由 `MainViewModel` 启动，不是常驻。
+- 安全：原绑 `0.0.0.0` 且无鉴权，现由 `LocalServerAuth` 发放**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换。
+- ⛔ **`NetworkUtils.getLocalIpAddress()` 必须读 `/proc/net/fib_trie`**：Java `NetworkInterface.getNetworkInterfaces()`（getifaddrs）**枚举不到 TAP 桥接地址**（模拟器上只看到 NAT `10.0.2.15`），但内核 `fib_trie`（world-readable）里有 `host LOCAL` 条目。实现上跨接口收集 NetworkInterface 地址 + 读 `fib_trie` 补齐 + 按 `ipScore`（`192.168.`=5 > `10.`=4 > `10.0.2.`=1 > `169.254.`=0）全局择优。缺了这一步，二维码会给出不可达的 NAT 地址，手机扫码连不上。
+
+### 4.14 其它
+- **Multi-ABI**：`arm64-v8a` / `armeabi-v7a` / `x86_64` / **`x86`**（含 x86 以便 TV 模拟器调试）。
+- lint 输出里出现 `LintCliClient.analyzeOnly` → UAST visitor 的**内部异常栈是既有的**（`docs/archive/verification/verify4.log` 中同样存在），不影响报告与构建结果，不要当新问题排查。
+
+---
+
+## 5. Conventions
+
+- Git/分支/commit 规则见 `.opencode/rules.md`（conventional-commit 前缀、`main`/`dev`/`feat/*`，以及"经验证的改动要同步 `CHANGELOG.md` + `docs/technical-overview.md`"）。**以该文件为准，不要在这里重复。**
+- 变更历史记录在 `docs/technical-overview.md` §15；`docs/changes/` 存每次变更报告；`docs/archive/` 是历史快照（含原 §10 的 1.6 万行历史流水 `technical-overview-changelog.md`）。
+- 测试：`app/src/test/`，JUnit4 + Robolectric。目标类隔离：`./gradlew testDebugUnitTest --tests "*XxxTest"`。
+
+### 5.1 ⛔ 绝不用 PowerShell 对 UTF-8 源文件做文本往返
+`(Get-Content -Raw) -replace … | Set-Content` 会按控制台代码页（CP936）读、UTF-8 写回 ⇒ 中文注释变乱码，并**吞掉紧邻的 ASCII 标点与换行** ⇒ 语法直接崩。
+批量替换一律用 `edit`/`write` 工具，或 `python -c` 配 `encoding='utf-8'`。
+（真实教训：曾用该手法毁掉一个 2400 行、未提交、无备份的原型文件。）
+
+### 5.2 文档写作风格（用户明令）
+- `README.md` **只列功能** —— 面向用户、简洁，剔除实现级细节。
+- `CHANGELOG.md` 条目**只写做了什么** —— 每条一行，**不写根因、不写实现细节、不写源码行号、不写验证过程**；那些属于 `docs/technical-overview.md`。
+- **只改当前版本的段落**，永不重写历史段落。
+
+### 5.3 文档生命周期（归档规则）
+`docs/` 根目录只放**活文档**：`technical-overview.md`、`conventions-adaptive-ui.md`。完成的方案移入 `docs/archive/`；对外文章（知乎等）在 `docs/articles/`。
+一份文档**同时满足**下列两条才可归档：
+1. **它不是活文档**（只有持续维护的索引/约定文档永久留在根目录）；
+2. **它的命运已定** —— ✅ 已落地（以 `CHANGELOG.md` 与源码是否真存在为准，如 `SubsonicAdapter.kt`、`KaraokePlaybackScreen.kt`），或 ❌ 永久废弃。
+
+### 5.4 可视化原型的验证脚本
+浏览器原型（`docs/*.html`）的验证脚本在 `docs/archive/verification/scripts/`。
+⭐ **Kotlin 端单测可直接照抄 harness 的断言口径**（测的都是纯函数：位置映射、噪声连续性、cull 阈值、每帧位移上限），不需要图形设备。
+⚠️ harness 的探针**必须挂在目标变量赋值之后** —— 挂错作用域会读到上一帧残留值，量出「间距恒等于 0」这类假结论（真实发生过）。
+⚠️ 基线数字**只能由脚本再生，不许手抄**（例：Moonlit 云场基线由 `moonlit_cloud_golden.js` → `MoonlitCloudBaseline.kt`）。把数抄进 Kotlin 注释或测试就是偏差重演。
+
+---
+
+## 6. 新增功能检查清单
+
+- [ ] 新页面：加 `data/model/Screen.kt` 的 `Screen` 枚举值 + `AppRoot` 分支（⛔ 不引 Navigation 框架）
+- [ ] 新文案：**同步** `res/values/strings.xml` 与 `res/values-en/strings.xml`
+- [ ] 新可聚焦组件：焦点视觉走 `shouldShowFocusVisuals()`；焦点环挂链尾（在 `.background()` 之后）
+- [ ] 新容器组件：同时下发 `LocalFocusableContentColor` 与 `LocalContentColor`
+- [ ] 多列网格走 `adaptiveColumns(...)`（⛔ 不写死 `GridCells.Fixed(常量)`）
+- [ ] 对话框走 `responsiveDialogSize(...)`；弹层必须 `RegisterDialogBackHandler(onDismiss)`
+- [ ] ⛔ **禁止在 `AppRoot` 顶层订阅 `progress`/`duration`**（1000ms Handler 轮询，会导致整棵树每秒重组）—— 需要进度的组件在自己内部订阅
+- [ ] 触摸目标：`TV_TOUCH_TARGET = 56dp` 为下限；沿用 `portraitTouchTarget(...)` 包裹
+- [ ] 新后端：实现 `BackendAdapter`，需要请求头则覆写 `streamHeaders`（⛔ 不另起认证链路）
+- [ ] 新可序列化模型：补 `proguard-rules.pro` 的 `-keep`（Gson 擦除坑）
+- [ ] 纯逻辑（列数、方向、评分）抽顶层 `internal fun` 并补 JVM 单测
