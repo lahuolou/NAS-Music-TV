@@ -1,0 +1,290 @@
+{
+  "schema_version": "1.0",
+  "change_id": "2026-10-31-tv-large-library-cover-optimization",
+  "title": "Android TV 大曲库与封面加载性能优化",
+  "date": "2026-10-31",
+  "baseline": "NAS-Music-TV-播放器稳定性性能优化版.zip",
+  "scope": {
+    "platform": "Android TV",
+    "phone_ui_added": false,
+    "nas_protocols_changed": false,
+    "gradle_dependencies_added": false,
+    "playback_audio_pipeline_changed": false
+  },
+  "goals": [
+    "Move embedded cover file reads and ID3/APIC extraction away from Compose main thread",
+    "Avoid duplicate APIC extraction for the same local audio file",
+    "Cancel stale cover prefetch requests during rapid track changes and AppRoot disposal",
+    "Reduce temporary list/set allocations during large-library artist index updates and search merge",
+    "Ensure artist index updates replace stale song metadata and remove changed artist associations"
+  ],
+  "design_summary": [
+    {
+      "area": "compose-cover-io",
+      "before": "UnifiedSongRow used remember with synchronous EmbeddedCoverExtractor.extractCoverUri; remember does not switch dispatchers.",
+      "after": "A shared produceState helper runs local cover extraction and sidecar file checks in Dispatchers.IO; initial UI uses existing coverUrl as fallback.",
+      "behavior": "Cover priority remains unchanged; embedded artwork may replace the fallback after asynchronous extraction."
+    },
+    {
+      "area": "cover-candidate-resolution",
+      "before": "getCoverCandidates was synchronous and could perform file checks/APIC extraction on caller thread.",
+      "after": "getCoverCandidates is suspend and wraps candidate construction in withContext(Dispatchers.IO).",
+      "behavior": "Callers must run in coroutine context; all in-repository call sites were migrated/verified."
+    },
+    {
+      "area": "cover-prefetch-lifecycle",
+      "before": "Prefetch requests had no explicit request handle management, no URL cap, and no AppRoot dispose cleanup.",
+      "after": "Normalize and cap to 12 unique URLs, track Coil Disposable handles, cancel prior generations, and expose cancelPending for disposal.",
+      "behavior": "Completed Coil cache entries remain; in-flight obsolete prefetches are disposed."
+    },
+    {
+      "area": "embedded-cover-cache",
+      "before": "Different UI surfaces could concurrently extract the same file; local cache key was based on path only.",
+      "after": "32 striped per-key locks serialize same-key extraction; local file cache key includes resolved path, lastModified and length.",
+      "behavior": "Changed local files with different mtime/size no longer hit stale positive or negative APIC cache entries; content URI versioning remains URI-only."
+    },
+    {
+      "area": "artist-index",
+      "before": "Artist index batches copied all artist lists; updates with same songId could leave stale Song objects; changed artist names could leave old associations.",
+      "after": "Pure Kotlin ArtistSongIndex shallow-copies maps, copies only affected artist lists, updates by songId, and batch-filters removed associations.",
+      "behavior": "Artist grouping reflects latest metadata while untouched lists may be structurally shared."
+    },
+    {
+      "area": "artist-search-merge",
+      "before": "For each search result, the UI rebuilt a Set from the complete artist list and allocated another list on append.",
+      "after": "ArtistSongIndex.mergeSearchResults copies a touched list once and creates its ID set once.",
+      "behavior": "Existing artist list entries retain priority; only missing song IDs are appended."
+    }
+  ],
+  "files": [
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/ui/components/song/UnifiedSongRow.kt",
+      "action": "modified",
+      "category": "production-ui",
+      "reason": [
+        "remember memoizes values but does not move disk IO off the Compose main thread",
+        "ID3/APIC extraction while scrolling may cause TV UI frame stalls"
+      ],
+      "changes": [
+        "add rememberEffectiveCoverUrl composable helper",
+        "use produceState with Dispatchers.IO for embedded artwork extraction",
+        "check downloaded cover sidecar on IO",
+        "share helper across row and card layout",
+        "retain song.coverUrl as immediate fallback"
+      ],
+      "impact": "No change to cover priority; extraction completes asynchronously."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/ui/viewmodel/MainViewModel.kt",
+      "action": "modified",
+      "category": "viewmodel-performance",
+      "reason": [
+        "cover candidate construction can inspect files and extract embedded artwork",
+        "artist index update logic should be independently testable"
+      ],
+      "changes": [
+        "change getCoverCandidates to suspend",
+        "execute candidate checks and APIC extraction in withContext(Dispatchers.IO)",
+        "delegate artist map mutation to ArtistSongIndex.append inside existing artistMapsMutex"
+      ],
+      "impact": "Existing call sites are all coroutine contexts; new callers must also use coroutine context."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/ui/components/AppRoot.kt",
+      "action": "modified",
+      "category": "production-ui",
+      "reason": [
+        "synchronous remember candidate generation executes during composition",
+        "prefetch tasks should follow queue changes and app root lifecycle"
+      ],
+      "changes": [
+        "remove synchronous remember around getCoverCandidates",
+        "resolve current/previous/next candidates in a LaunchedEffect on IO",
+        "add queue index and neighbor song IDs to effect keys",
+        "cancel pending cover prefetch on DisposableEffect disposal"
+      ],
+      "impact": "Current/neighbor prefetch responds to queue changes and cleans up when AppRoot leaves composition."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/ui/components/CoverPrefetcher.kt",
+      "action": "modified",
+      "category": "image-loading",
+      "reason": [
+        "rapid track changes can leave obsolete image requests consuming network and decode resources",
+        "misbehaving backend can return an excessive number of candidate URLs"
+      ],
+      "changes": [
+        "trim, remove blank and deduplicate URLs",
+        "cap each prefetch generation at 12 URLs",
+        "track Coil Disposable handles",
+        "cancel previous generation immediately when the AppRoot effect starts and again when the new prefetch generation registers",
+        "use generation checks to dispose requests enqueued by stale generations",
+        "add cancelPending lifecycle method"
+      ],
+      "impact": "Only in-flight obsolete requests are cancelled; completed Coil cache entries remain."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/backend/local/EmbeddedCoverExtractor.kt",
+      "action": "modified",
+      "category": "local-file-cache",
+      "reason": [
+        "same song can be requested concurrently by queue, list and player view",
+        "path-only cache key cannot detect a file modified in place"
+      ],
+      "changes": [
+        "add 32 striped per-key extraction locks",
+        "run cache lookup, negative cache lookup, header read, APIC parsing and cache write under same-key lock",
+        "include file lastModified and length in local file cache key",
+        "retain URI-based key for content URI sources"
+      ],
+      "impact": "Same-key duplicate APIC reads are coalesced; changed local files with changed mtime/length get a fresh cache entry."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/ui/screens/LibraryScreen.kt",
+      "action": "modified",
+      "category": "library-search",
+      "reason": [
+        "old merge rebuilt a Set from an entire artist song list for every search result"
+      ],
+      "changes": [
+        "replace inline repeated list/set merge with ArtistSongIndex.mergeSearchResults"
+      ],
+      "impact": "Preserves existing-first dedupe and normalized collaboration grouping with fewer allocations."
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/data/model/ArtistSongIndex.kt",
+      "action": "added",
+      "category": "pure-kotlin-production",
+      "reason": [
+        "artist indexing logic should be isolated from Android ViewModel and Compose for testing",
+        "large-library indexing should avoid copying unaffected artist lists"
+      ],
+      "changes": [
+        "add immutable-input append algorithm with shallow map copies",
+        "copy only artist lists touched by the batch",
+        "replace stale Song object when same songId is updated",
+        "remove old artist associations when the artist field changes",
+        "defer list deletion to one filtering pass per artist",
+        "add linear-style search result merge with one ID set per artist"
+      ],
+      "impact": "New immutable maps published to StateFlow; unaffected artist list references are shared."
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/data/model/ArtistSongIndexTest.kt",
+      "action": "added",
+      "category": "unit-tests",
+      "reason": [
+        "protect artist index append/update/remove and search merge behavior"
+      ],
+      "changes": [
+        "add six regression test methods"
+      ],
+      "impact": "Covers collaboration grouping, input immutability, same-ID update, changed artist, empty bucket cleanup, search dedupe and untouched-list sharing."
+    },
+    {
+      "path": "CHANGELOG.md",
+      "action": "modified",
+      "category": "documentation",
+      "reason": ["record current unreleased behavior changes"],
+      "changes": ["add large-library and cover loading optimization summary"]
+    },
+    {
+      "path": "docs/technical-overview.md",
+      "action": "modified",
+      "category": "documentation",
+      "reason": ["preserve technical rationale and boundaries in project overview"],
+      "changes": ["append section 10.282"]
+    },
+    {
+      "path": "docs/changes/2026-10-31-tv-large-library-cover-optimization.md",
+      "action": "added",
+      "category": "human-readable-change-record",
+      "reason": ["provide a detailed file-by-file implementation and verification record"],
+      "changes": ["document goals, context, behavior, files, complexity, validation, limitations and TV-only scope"]
+    },
+    {
+      "path": "docs/changes/2026-10-31-tv-large-library-cover-optimization.json",
+      "action": "added",
+      "category": "machine-readable-change-manifest",
+      "reason": ["allow AI and automation to parse changes without relying on prose extraction"],
+      "changes": ["record baseline, platform, goals, behavior, per-file actions, verification and limitations"]
+    }
+  ],
+  "deleted_files": [],
+  "file_summary": {
+    "added": 4,
+    "modified": 8,
+    "deleted": 0,
+    "source_code_added": 1,
+    "test_files_added": 1,
+    "source_code_modified": 6,
+    "documentation_added": 2,
+    "documentation_modified": 2,
+    "total_changed": 12
+  },
+  "verification": {
+    "artist_song_index_kotlin_compile": {
+      "status": "passed",
+      "details": "Compiled actual Song.kt, ArtistSplitter.kt and ArtistSongIndex.kt using local Kotlin/JVM compiler."
+    },
+    "artist_song_index_test_source_compile": {
+      "status": "passed",
+      "details": "Compiled the actual six-method ArtistSongIndexTest.kt against a lightweight JUnit API stub; this is not the Gradle JUnit/Robolectric runner."
+    },
+    "artist_song_index_test_methods": {
+      "status": "passed",
+      "passed": 6,
+      "total": 6,
+      "details": "Executed each actual test method directly; all assertions passed."
+    },
+    "artist_song_index_behavior_harness": {
+      "status": "passed",
+      "assertions": 7
+    },
+    "artist_song_index_randomized_batches": {
+      "status": "passed",
+      "batches": 250,
+      "unique_song_ids": 40,
+      "details": "Compared actual ArtistSongIndex results with a naive reference model across repeated additions, same-ID updates, collaboration changes and removals."
+    },
+    "embedded_cover_extractor_stubbed_compile": {
+      "status": "passed",
+      "details": "Compiled the actual EmbeddedCoverExtractor source against minimal Android, Uri, AppLog and ID3 stubs; not an Android Gradle build."
+    },
+    "cover_prefetcher_stubbed_compile": {
+      "status": "passed",
+      "details": "Compiled the actual CoverPrefetcher source against minimal Android and Coil API stubs; not an Android Gradle build."
+    },
+    "cover_io_callsite_static_audit": {
+      "status": "passed",
+      "details": "Confirmed both EmbeddedCoverExtractor UI/ViewModel call sites are within IO execution paths and all getCoverCandidates call sites are in coroutine contexts."
+    },
+    "android_gradle_compile": {
+      "status": "not_run",
+      "reason": "No Android SDK in execution environment; project's wrapper distribution points to local developer path D:/tools/gradle-9.5.0-bin.zip."
+    },
+    "full_unit_robolectric_suite": {
+      "status": "not_run",
+      "reason": "Android Gradle test environment unavailable."
+    },
+    "lint": {
+      "status": "not_run",
+      "reason": "Android Gradle lint task unavailable in this environment."
+    },
+    "android_tv_device_stress": {
+      "status": "not_run",
+      "reason": "No TV device or NAS lab available for scrolling, rapid track change and large-library stress tests."
+    }
+  },
+  "known_limits": [
+    "content:// EmbeddedCoverExtractor cache keys remain URI-based; same URI updated in place may require a future MediaStore DATE_MODIFIED/SIZE signature.",
+    "The local Android Gradle build and full Robolectric suite must be run on the developer Windows/Android Studio environment.",
+    "No real 20k/50k NAS library benchmark or TV device frame-time measurement has been performed."
+  ],
+  "docs": {
+    "human_readable": "docs/changes/2026-10-31-tv-large-library-cover-optimization.md",
+    "machine_readable": "docs/changes/2026-10-31-tv-large-library-cover-optimization.json",
+    "technical_overview_section": "docs/technical-overview.md §10.282",
+    "changelog": "CHANGELOG.md"
+  }
+}

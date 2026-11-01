@@ -1,0 +1,288 @@
+{
+  "schema_version": "1.0",
+  "change_id": "NAS-TV-2026-10-31-PLAYER-STABILITY-01",
+  "date": "2026-10-31",
+  "project": "NAS-Music-TV",
+  "baseline": "NAS-Music-TV-TV-原有代码优化版.zip",
+  "platform_scope": [
+    "Android TV"
+  ],
+  "phone_ui_added": false,
+  "dependencies_added": [],
+  "files": [
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/backend/network/NetworkMusicManager.kt",
+      "action": "modified",
+      "area": "network-routing/cache",
+      "reason": [
+        "network suspend cancellation must propagate",
+        "cache maintenance should not scan and sort on every resolve",
+        "late response from a replaced service must not repopulate current cache",
+        "source identity check and cache commit need atomic ordering against register/unregister"
+      ],
+      "changes": [
+        "propagate CancellationException",
+        "use monotonic System.nanoTime TTL",
+        "throttle full cache maintenance to 60 seconds",
+        "check current-key TTL on access",
+        "bound caches to 500 entries",
+        "clear source cache on register/unregister",
+        "guard stale service-instance cache writes",
+        "expire DEAD probe entries precisely",
+        "serialize source registration/unregistration and cache commit; discard stale in-flight URL result"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/backend/network/CandidatePicker.kt",
+      "action": "modified",
+      "area": "network-candidate-search",
+      "reason": [
+        "cancelled candidate search or resolve must not be treated as ordinary network failure"
+      ],
+      "changes": [
+        "rethrow CancellationException from search and resolve"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/backend/network/MetingApiService.kt",
+      "action": "modified",
+      "area": "netease-search-fallback",
+      "reason": [
+        "cancelling native-first search must not trigger Meting fallback requests"
+      ],
+      "changes": [
+        "rethrow CancellationException before generic native API fallback catch"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/player/PlaybackService.kt",
+      "action": "modified",
+      "area": "media3-lifecycle/cache",
+      "reason": [
+        "Media3 Future and coroutine lifecycle can otherwise diverge",
+        "cancelled background URL resolution must not fall back using a stale queue index",
+        "query cache should be bounded and TTL should start after results are ready"
+      ],
+      "changes": [
+        "bind Future cancellation to Job cancellation",
+        "bind Job cancellation to Future cancellation via completion hook",
+        "propagate CancellationException in no-UI stream resolution",
+        "use synchronized access-order search LRU capped at 64",
+        "copy search results to list snapshot",
+        "start search cache TTL after search completion",
+        "clear caches on service destruction"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/player/BrowseCache.kt",
+      "action": "modified",
+      "area": "media-library-cache",
+      "reason": [
+        "batch mediaId lookup previously acquired the shared lock per item"
+      ],
+      "changes": [
+        "perform batch lookup under one synchronized block",
+        "preserve query order and access-order LRU refresh"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/player/PlayerManager.kt",
+      "action": "modified",
+      "area": "queue/shuffle",
+      "reason": [
+        "queue indices become stale after reorder/removal",
+        "external mutable lists and invalid start indexes can desynchronize state from ExoPlayer"
+      ],
+      "changes": [
+        "snapshot queue inputs",
+        "normalize requested start index",
+        "reset shuffle history after queue mutation/replacement",
+        "share history across random next, idle recovery, silent advance and preview",
+        "publish queue/currentIndex/currentSong together"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/nasmusic/tv/player/ShuffleHistory.kt",
+      "action": "added",
+      "area": "pure-logic",
+      "reason": [
+        "separate queue shuffle history from Android/Media3 player lifecycle"
+      ],
+      "changes": [
+        "track played indices",
+        "drop invalid indices after queue shrink",
+        "start next round without immediately repeating current item",
+        "normalize queue start index"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/player/ShuffleHistoryTest.kt",
+      "action": "added",
+      "area": "unit-tests",
+      "reason": [
+        "protect pure queue/shuffle invariants"
+      ],
+      "changes": [
+        "cover empty queue",
+        "cover index clamping",
+        "cover played item exclusion",
+        "cover queue shrink",
+        "cover next-round behavior",
+        "cover reset after queue change"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/player/BrowseCacheTest.kt",
+      "action": "added",
+      "area": "unit-tests",
+      "reason": [
+        "protect batch browse cache behavior and LRU semantics"
+      ],
+      "changes": [
+        "cover input ordering",
+        "cover full/bare media IDs",
+        "cover blank and missing IDs",
+        "cover LRU promotion"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/backend/network/CandidatePickerTest.kt",
+      "action": "modified",
+      "area": "unit-tests",
+      "reason": [
+        "ensure cancellation propagation is regression-tested"
+      ],
+      "changes": [
+        "test search cancellation propagation",
+        "test candidate resolve cancellation propagation"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/backend/network/NetworkMusicManagerTest.kt",
+      "action": "modified",
+      "area": "unit-tests",
+      "reason": [
+        "ensure network cancellation and source cache invalidation are regression-tested"
+      ],
+      "changes": [
+        "test search cancellation does not fall through",
+        "test URL resolution cancellation propagates",
+        "test re-registering source invalidates old URL cache",
+        "test in-flight old service result is discarded after same sourceId is replaced"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/nasmusic/tv/backend/network/NeteasePrioritySearchTest.kt",
+      "action": "modified",
+      "area": "unit-tests",
+      "reason": [
+        "ensure cancellation while native endpoint is in flight does not trigger fallback"
+      ],
+      "changes": [
+        "add delayed MockWebServer native response cancellation test",
+        "keep test network isolated from public endpoints"
+      ]
+    },
+    {
+      "path": "CHANGELOG.md",
+      "action": "modified",
+      "area": "project-changelog",
+      "reason": [
+        "summarize current round in unreleased changelog"
+      ],
+      "changes": [
+        "add playback cancellation and Future lifecycle fix summary",
+        "add queue/shuffle consistency summary",
+        "add network and media browse cache optimization summary"
+      ]
+    },
+    {
+      "path": "docs/technical-overview.md",
+      "action": "modified",
+      "area": "technical-documentation",
+      "reason": [
+        "preserve implementation rationale and constraints in project technical overview"
+      ],
+      "changes": [
+        "append section 10.281 for this round",
+        "record cache mutation lock and stale in-flight URL result discard"
+      ]
+    },
+    {
+      "path": "docs/changes/2026-10-31-player-stability-performance.md",
+      "action": "added",
+      "area": "human-readable-change-document",
+      "reason": [
+        "provide detailed change record for maintainers"
+      ],
+      "changes": [
+        "document per-file changes and reasons",
+        "document validation status and limitations",
+        "document TV-only scope and follow-up checks"
+      ]
+    },
+    {
+      "path": "docs/changes/2026-10-31-player-stability-performance.json",
+      "action": "added",
+      "area": "machine-readable-change-manifest",
+      "reason": [
+        "make change record easy for AI and automation to parse"
+      ],
+      "changes": [
+        "provide stable change ID and baseline",
+        "provide machine-readable file actions, reasons, modifications and verification status"
+      ]
+    }
+  ],
+  "deleted_files": [],
+  "verification": {
+    "pure_kotlin_shuffle_harness": {
+      "status": "passed",
+      "assertions": 7
+    },
+    "pure_kotlin_browse_cache_harness": {
+      "status": "passed",
+      "assertions": 4
+    },
+    "android_gradle_compile": {
+      "status": "not_run",
+      "reason": "Android SDK unavailable; Gradle wrapper points to developer-local D:/tools/gradle-9.5.0-bin.zip"
+    },
+    "robolectric_test_suite": {
+      "status": "not_run",
+      "reason": "Android Gradle test environment unavailable"
+    },
+    "device_nas_integration": {
+      "status": "not_run",
+      "reason": "No Android TV device/NAS integration environment in this run"
+    },
+    "network_manager_candidate_picker_standalone_compile": {
+      "status": "passed",
+      "details": "Compiled the actual NetworkMusicManager.kt, CandidatePicker.kt, and project model/interface sources with minimal stubs only for Android R and AppLog. This is not an Android Gradle build."
+    },
+    "network_manager_inflight_replacement_harness": {
+      "status": "passed",
+      "assertions": 3,
+      "details": "Executed actual NetworkMusicManager with a suspending fake service; verified an in-flight old-source result is discarded after same sourceId replacement and the replacement service URL is returned."
+    },
+    "manifest_references": {
+      "status": "passed",
+      "files_checked": 16
+    }
+  },
+  "docs": {
+    "human_readable": "docs/changes/2026-10-31-player-stability-performance.md",
+    "technical_overview_section": "§10.281",
+    "changelog": "CHANGELOG.md",
+    "machine_readable": "docs/changes/2026-10-31-player-stability-performance.json"
+  },
+  "file_summary": {
+    "added": 5,
+    "modified": 11,
+    "deleted": 0,
+    "added_code_and_test_files": 3,
+    "modified_code_and_test_files": 9,
+    "added_documentation_files": 2,
+    "modified_documentation_files": 2
+  }
+}

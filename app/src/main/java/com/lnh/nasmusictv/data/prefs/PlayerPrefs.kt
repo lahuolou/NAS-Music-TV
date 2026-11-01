@@ -1,0 +1,47 @@
+package com.lnh.nasmusictv.data.prefs
+
+import com.lnh.nasmusictv.data.model.PlayMode
+import com.lnh.nasmusictv.player.SeparationMode
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * R-4 播放域子 Prefs（门面：键不迁移，DataStore 单例由 AppPreferences 持有）。
+ * 访问器从 AppPreferences 原样搬迁；调用方经 prefs.player.xxx 渐进迁移。
+ */
+class PlayerPrefs internal constructor(private val prefs: AppPreferences) {
+
+    // F2-5：跨曲交叉淡入淡出（跨域键放 AppPreferences，此处门面暴露）
+    val crossfadeEnabled = prefs.crossfadeEnabled
+    val crossfadeDurationSec = prefs.crossfadeDurationSec
+    suspend fun setCrossfadeEnabled(enabled: Boolean) = prefs.setCrossfadeEnabled(enabled)
+    suspend fun setCrossfadeDurationSec(sec: Int) = prefs.setCrossfadeDurationSec(sec)
+
+    // 应用内音量（0.0–1.0，独立于系统音量；跨淡按比例缩放）
+    val appVolume = prefs.appVolume
+    suspend fun setAppVolume(volume: Float) = prefs.setAppVolume(volume)
+
+    // F2-6：音质档位（AUTO=0/无损999/高音质320/标准128）
+    val qualityTier = prefs.qualityTier
+    suspend fun setQualityTier(tier: Int) = prefs.setQualityTier(tier)
+
+    /** 多码率：同步读取档位（UI 标签计算用，读 @Volatile 内存镜像不阻塞） */
+    fun getQualityTierSyncSafe(): Int = prefs.getQualityTierSync()
+
+    /** 音质档位变化回调（NetworkMusicManager 清播放 URL 缓存用） */
+    fun setOnQualityTierChanged(cb: () -> Unit) = prefs.setOnQualityTierChanged(cb)
+
+    /** 播放 URL 缓存失效回调（NetworkMusicManager 清缓存用） */
+    fun setOnPlayUrlCacheInvalidated(cb: () -> Unit) = prefs.setOnPlayUrlCacheInvalidated(cb)
+
+    val pitchSemitones: Flow<Int> = prefs.pitchSemitones
+    val playbackSpeed: Flow<Double> = prefs.playbackSpeed
+    val separationMode: Flow<SeparationMode> = prefs.separationMode
+
+    suspend fun setPitchSemitones(semitones: Int) = prefs.setPitchSemitones(semitones)
+    suspend fun setPlaybackSpeed(speed: Double) = prefs.setPlaybackSpeed(speed)
+    suspend fun setSeparationMode(mode: SeparationMode) = prefs.setSeparationMode(mode)
+    suspend fun setAutoPlayNext(enabled: Boolean) = prefs.settings.setAutoPlayNext(enabled)
+    suspend fun setDefaultPlayMode(mode: PlayMode) = prefs.settings.setDefaultPlayMode(mode)
+    suspend fun setAnimationsEnabled(enabled: Boolean) = prefs.settings.setAnimationsEnabled(enabled)
+    suspend fun setDarkTheme(enabled: Boolean) = prefs.settings.setDarkTheme(enabled)
+}
