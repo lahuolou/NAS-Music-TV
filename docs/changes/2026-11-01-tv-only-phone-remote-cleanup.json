@@ -1,0 +1,492 @@
+{
+  "schema_version": "1.0",
+  "change_id": "NAS-TV-2026-11-01-TVONLY-PHONEREMOTE-01",
+  "date": "2026-11-01",
+  "project": "NAS-Music-TV",
+  "baseline": "none (project not under git in this environment); documented plan = NASMusicTV-TV单平台与手机遥控保留-源码审计版改造方案.md; plan-referenced 06f1c761 not verified here",
+  "platform_scope": [
+    "Android TV"
+  ],
+  "phone_browser_remote_preserved": true,
+  "dependencies_added": 0,
+  "files": [
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/components/CommonComponents.kt",
+      "action": "modified",
+      "area": "touch-target-naming",
+      "reason": [
+        "PHONE_TOUCH_TARGET_DP renamed to TV_TOUCH_TARGET_DP (prior session); fix stale comments referencing CompactSizes.PHONE_UI_SCALE and old symbol name"
+      ],
+      "changes": [
+        "update KDoc to drop 0.82 phone scale reference",
+        "fix cross-reference comment to TV_TOUCH_TARGET_DP"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/theme/Theme.kt",
+      "action": "modified",
+      "area": "theme-comment",
+      "reason": [
+        "LocalPhoneCompact removed with phone UI; stale comment reference must be fixed"
+      ],
+      "changes": [
+        "comment no longer references LocalPhoneCompact"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/components/VolumeControl.kt",
+      "action": "modified",
+      "area": "phase1-tv-only",
+      "reason": [
+        "phone touch-button branch is dead code on TV (isTVDevice always true)"
+      ],
+      "changes": [
+        "remove isTVDevice branch, keep TV FocusableSurface single-face",
+        "delete dead VolumeCenterSurface/VolumeStepButton helpers",
+        "remove unused imports"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/components/VisualizerStage.kt",
+      "action": "modified",
+      "area": "phase1-tv-only",
+      "reason": [
+        "phone-only top-left Close exit button is dead code on TV"
+      ],
+      "changes": [
+        "remove phone-only Close button block and its imports",
+        "keep TV back-key / onPreviewKeyEvent behavior"
+      ],
+      "residual": [
+        "onExit and isTV params now unused in body (warnings only; callers still pass them)"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/viewmodel/VisualizerViewModel.kt",
+      "action": "modified",
+      "area": "phase2-gallery",
+      "reason": [
+        "remove phone MediaStore gallery source wiring while keeping enum/field/policy for backward-compat"
+      ],
+      "changes": [
+        "remove MediaStorePhotoSource import",
+        "photoWallSources no longer adds GALLERY kind"
+      ],
+      "residual": [
+        "GALLERY notice enums and rollback funcs retained deliberately (old backup / gallery:<id> decode compat)"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/backend/photo/PhotoWallController.kt",
+      "action": "modified",
+      "area": "phase2-gallery",
+      "reason": [
+        "stop enabling GALLERY photo source kind"
+      ],
+      "changes": [
+        "enabledKinds no longer adds PhotoSourceKind.GALLERY"
+      ]
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "action": "modified",
+      "area": "phase2-manifest",
+      "reason": [
+        "drop phone-only image permissions; keep audio/storage/leanback/auto per plan separate decision"
+      ],
+      "changes": [
+        "remove READ_MEDIA_IMAGES",
+        "remove READ_MEDIA_VISUAL_USER_SELECTED",
+        "update device-feature and main-activity comments"
+      ],
+      "kept": [
+        "READ_MEDIA_AUDIO",
+        "legacy READ_EXTERNAL_STORAGE maxSdkVersion=32",
+        "leanback required=false",
+        "LEANBACK_LAUNCHER intent-filter",
+        "USB host",
+        "Android Auto meta-data + MEDIA_PLAY_FROM_SEARCH"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/screens/settings/PhotoWallSettingsSection.kt",
+      "action": "modified",
+      "area": "phase2-gallery",
+      "reason": [
+        "remove phone-only Gallery settings UI"
+      ],
+      "changes": [
+        "remove Gallery SettingSwitch + partial-permission re-select button",
+        "remove showGalleryIntro dialog",
+        "remove gallery label from enabledSourcesText",
+        "re-add remember import; drop genuinely-unused imports"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/backend/SearchAggregator.kt",
+      "action": "modified",
+      "area": "phaseB-pinyin-main-path",
+      "reason": [
+        "make pinyin matching the default (TV) path; remove only-TV-enables-pinyin device switch"
+      ],
+      "changes": [
+        "remove isTVDevice constructor param",
+        "drop && isTVDevice gates on NAS/baidu/local pinyin branches",
+        "pinyinCache always built (no if(isTVDevice))",
+        "matchesBySearchTypePrecise loses isTVDevice param and early return false",
+        "update comments"
+      ],
+      "kept": [
+        "PinyinUtils",
+        "SongWithPinyin",
+        "pinyin index implementation"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/NasMusicApp.kt",
+      "action": "modified",
+      "area": "phaseB-pinyin-main-path",
+      "reason": [
+        "remove now-unused isTVDevice local and SearchAggregator arg"
+      ],
+      "changes": [
+        "delete val isTVDevice local",
+        "remove isTVDevice = isTVDevice construction arg"
+      ]
+    },
+    {
+      "path": "app/src/test/java/com/lnh/nasmusictv/ui/viewmodel/ArtistExpansionGenerationGateTest.kt",
+      "action": "modified",
+      "area": "phaseB-test-sync",
+      "reason": [
+        "Sync SearchAggregator construction with removed isTVDevice param"
+      ],
+      "changes": [
+        "remove isTVDevice = false argument"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/screens/TextInputDialog.kt",
+      "action": "modified",
+      "area": "phaseD-tv-default-keyboard",
+      "reason": [
+        "default to TV custom keyboard; QR is the phone-browser remote input entry and must stay on"
+      ],
+      "changes": [
+        "remove isTVDevice detection",
+        "showSystemIme defaults false (TV custom keyboard)",
+        "effectiveShowQrCode = showQrCode (follow caller switch)",
+        "keep IME-toggle (中文输入) button, LocalInputServer lifecycle, qrText, history"
+      ],
+      "kept": [
+        "QR remote input",
+        "LocalInputServer",
+        "history suggestions"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/util/NetworkUtils.kt",
+      "action": "modified",
+      "area": "remote-control-reachability",
+      "reason": [
+        "QR code still advertised the emulator NAT address 10.0.2.15, unreachable from the LAN, so phone/PC browser remote could not connect",
+        "Java NetworkInterface.getNetworkInterfaces() (getifaddrs) does NOT enumerate TAP-bridged 192.168.x addresses, although the kernel routing table does"
+      ],
+      "changes": [
+        "getLocalIpAddress(): collect non-loopback IPv4 across ALL up interfaces with per-interface priority (eth +2 / wlan +1 / isUp +8)",
+        "getLocalIpAddress(): global pick by ipScore (192.168.=5 > 10./172.=4 > public=3 > 10.0.2.=1 > 169.254.=0) instead of firstOrNull()",
+        "new readLocalIpsFromFibTrie(): parse /proc/net/fib_trie 'host LOCAL' entries to recover bridged addresses invisible to Java",
+        "temporary VERIFY debug logging removed after verification; .map { it.hostAddress } -> .mapNotNull { it.hostAddress } to clear a nullable-type compiler warning"
+      ],
+      "verified": "logcat: 'fib_trie_ips=[10.0.2.15, 192.168.100.90]' -> 'getLocalIpAddress -> 192.168.100.90'"
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/backend/photo/MediaStorePhotoSource.kt",
+      "action": "deleted",
+      "area": "phase2-gallery",
+      "reason": [
+        "phone MediaStore photo source implementation; not wired on TV path after phone client retired"
+      ],
+      "changes": [
+        "file deleted; no dangling references (grep clean)"
+      ],
+      "kept_for_compat": [
+        "PhotoSourceKind.GALLERY enum value",
+        "photoWallGalleryEnabled field",
+        "PhotoWallAccessPolicy gallery funcs",
+        "PermissionHelper photo API"
+      ]
+    },
+    {
+      "path": "CHANGELOG.md",
+      "action": "modified",
+      "area": "project-changelog",
+      "reason": [
+        "rewrite from code: remove entries referencing symbols that no longer exist (LocalPhoneCompact typo, PHONE_UI_SCALE / LYRICS_RECOVER_SCALE / PHONE_TOUCH_TARGET) and organize around the real capability set and real version (versionName=1.0.0)"
+      ],
+      "changes": [
+        "rewrite entire file grounded in source"
+      ]
+    },
+    {
+      "path": "README.md",
+      "action": "modified",
+      "area": "project-readme",
+      "reason": [
+        "rewrite from code: correct the backends count (7 kinds, not five), visualizer theme count (25+, not '30+'), add radio / weather-radio / playlist import / reverse-control port table / Room+DataStore persistence, fix build section to the real JDK 17 + ANDROID_HOME paths and the non-ASCII GRADLE_USER_HOME workaround"
+      ],
+      "changes": [
+        "rewrite entire file grounded in source"
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "action": "modified",
+      "area": "agent-contributor-guide",
+      "reason": [
+        "rewrite from code: the 33KB guide contained multiple statements contradicting current source"
+      ],
+      "changes": [
+        "backends 'Jellyfin or Navidrome' -> BackendRegistry registers 7 types",
+        "UiMode 'TV / PhoneLandscape' -> only TV",
+        "ABI list add x86",
+        "visualizer theme count -> 25+",
+        "'no Jetpack Navigation despite the navigation-compose dependency' -> the project has NO navigation dependency at all",
+        "paths: adb -> D:/tools/Android/Sdk/platform-tools/adb.exe; wrapper -> file:///D:/tools/gradle-9.5.0-bin.zip; JDK -> C:/Program Files/Java/jdk-17.0.21.0.2",
+        "unit-test counts '184 classes / 2035 cases' -> 241 files / 2427 cases",
+        "add the two mandatory local workarounds (non-ASCII GRADLE_USER_HOME, --no-daemon) and the correct fileHashes.lock remedy (--stop, never rm)",
+        "add dead-dependency warning (androidx.leanback declared, zero imports), the fib_trie IP fact, and the fact that ScreenUiModeCoverageTest was inverted into a portrait-residue scan"
+      ]
+    },
+    {
+      "path": "docs/technical-overview.md",
+      "action": "modified",
+      "area": "architecture-overview",
+      "reason": [
+        "rewrite from code: the 1.4MB generated file carried extensive historical LocalPhoneCompat / isTVDevice portrait narratives"
+      ],
+      "changes": [
+        "rewrite as a 14-section architecture document: identity & platform, UI architecture (incl. focus-visual contract), module map, backends & data sources, file/network access, playback, lyrics, visualizer, photo wall, reverse control (incl. getLocalIpAddress findings), data layer, build & dependencies, testing, known constraints"
+      ]
+    },
+    {
+      "path": "docs/conventions-adaptive-ui.md",
+      "action": "modified",
+      "area": "tv-ui-conventions",
+      "reason": [
+        "rewrite from code: the whole document was built around the retired phone-portrait UiMode / PHONE_UI_SCALE system"
+      ],
+      "changes": [
+        "retitle to 'TV UI 维护约定' (filename kept for link stability)",
+        "add real-semantics table for the collapsed helpers (portraitTouchTarget / responsiveDialogSize / adaptiveColumns / TV_TOUCH_TARGET_DP)",
+        "keep and sharpen the focus-visual rules (judge, cache, false-positive surface, focus-ring z-order, onFocusChanged discipline) and the content-colour contract",
+        "correct a directional error: ScreenUiModeCoverageTest was INVERTED into a portrait-residue scan (fails if portrait identifiers reappear), not a 'every screen needs a portrait branch' gate",
+        "gate list rebuilt after verifying each referenced test file actually exists"
+      ]
+    },
+    {
+      "path": "docs/phone-client-cleanup-checklist.md",
+      "action": "modified",
+      "area": "cleanup-checklist-status",
+      "reason": [
+        "record that the source-audit plan phases are complete; Gallery item ⑩ done"
+      ],
+      "changes": [
+        "add execution-status block at top",
+        "mark ⑩ Gallery as handled"
+      ]
+    },
+    {
+      "path": "docs/changes/2026-11-01-tv-only-phone-remote-cleanup.md",
+      "action": "added",
+      "area": "human-readable-change-document",
+      "reason": [
+        "detailed change record for maintainers"
+      ],
+      "changes": [
+        "per-file reasons, changes, verification status, residual risks"
+      ]
+    },
+    {
+      "path": "docs/changes/2026-11-01-tv-only-phone-remote-cleanup.json",
+      "action": "added",
+      "area": "machine-readable-change-manifest",
+      "reason": [
+        "make change record easy for AI/automation to parse"
+      ],
+      "changes": [
+        "stable change_id, baseline, file actions, reasons, verification status"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/screens/NowPlayingScreen.kt",
+      "action": "modified",
+      "area": "production-ui",
+      "reason": [
+        "remove constant-false dead variable isPhoneLandscape and fold its 8 always-else branches"
+      ],
+      "changes": [
+        "fold 8 always-false isPhoneLandscape branches to their effective values (32.dp/40.dp/12.dp/spacing/alignment)",
+        "purely equivalent refactor, zero runtime change"
+      ]
+    },
+    {
+      "path": "app/src/main/java/com/lnh/nasmusictv/ui/screens/MineScreen.kt",
+      "action": "modified",
+      "area": "production-ui",
+      "reason": [
+        "remove constant-false dead variable isPhone and its ~187-line unreachable phone single-column layout branch (Phase 5 cleanup)"
+      ],
+      "changes": [
+        "delete val isPhone = false and the entire unreachable if (isPhone) branch",
+        "promote TV two-column layout to be a direct child of Column",
+        "drop now-unused import com.lnh.nasmusictv.data.prefs.AppPreferences",
+        "purely equivalent refactor, zero runtime change"
+      ]
+    }
+  ],
+  "deleted_files": [
+    "app/src/main/java/com/lnh/nasmusictv/backend/photo/MediaStorePhotoSource.kt"
+  ],
+  "verification": {
+    "acceptance_grep_doc_7_1": {
+      "status": "passed",
+      "pattern": "UiMode\\.PhoneLandscape|LocalPhoneCompact|PHONE_UI_SCALE|LYRICS_RECOVER_SCALE|PHONE_TOUCH_TARGET",
+      "scope": [
+        "app/src/main/java",
+        "app/src/test/java"
+      ],
+      "result": "No matches found"
+    },
+    "mediastore_photo_source_dangling": {
+      "status": "passed",
+      "result": "No matches found across repo"
+    },
+    "phaseB_isTVDevice_removed": {
+      "status": "passed",
+      "files_checked": [
+        "SearchAggregator.kt",
+        "NasMusicApp.kt",
+        "ArtistExpansionGenerationGateTest.kt"
+      ],
+      "result": "No matches found"
+    },
+    "phaseD_isTVDevice_removed": {
+      "status": "passed",
+      "files_checked": [
+        "TextInputDialog.kt"
+      ],
+      "result": "No matches found"
+    },
+    "remote_services_intact": {
+      "status": "passed",
+      "files_exist": [
+        "net/RemoteControlServer.kt",
+        "net/LocalInputServer.kt",
+        "net/LocalServerAuth.kt",
+        "util/QrCodeGenerator.kt",
+        "util/NetworkUtils.kt",
+        "backend/files/SmbHttpStreamServer.kt"
+      ],
+      "wiring": [
+        "RemoteControlServer instantiated in MainViewModel.kt:200",
+        "LocalInputServer instantiated in TextInputDialog.kt:148"
+      ]
+    },
+    "android_gradle_compile": {
+      "status": "passed",
+      "task": "assembleDebug",
+      "result": "BUILD SUCCESSFUL (warnings only, 0 errors)",
+      "sdk": "D:/tools/Android/Sdk (Android Studio bundled)",
+      "emulator": "tv5 (Android TV, android-22) booted; com.lnh.nasmusictv installed OK"
+    },
+    "robolectric_test_suite": {
+      "status": "passed",
+      "task": "testDebugUnitTest",
+      "total": 2427,
+      "passed": 2427,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "regressions_from_this_change": 0,
+      "related_tests_all_pass": [
+        "ArtistExpansionGenerationGateTest",
+        "PinyinUtilsTest",
+        "PhotoWallAccessPolicyTest",
+        "PhotoWallPrefsTest",
+        "PhotoWallControllerTest",
+        "PhotoPermissionStateTest",
+        "NeteasePrioritySearchTest",
+        "MvSearchManagerTest",
+        "SearchMergeTest"
+      ],
+      "pre_existing_failures_now_fixed": [
+        {
+          "count": 288,
+          "root_cause": "A family of Gate/Contract/Coverage and visualizer.renderers tests read their own Kotlin source from disk using the OLD package path com/nasmusic/tv/, while the real package is com/lnh/nasmusictv/, causing FileNotFoundException / '找不到 UI 源码目录'. Fix: replaced the hardcoded package segment in 59 test files (143 occurrences).",
+          "unrelated_to_this_change": true
+        },
+        {
+          "count": 2,
+          "root_cause": "Test-side fragility / gate drift only, production logic untouched: (1) NetworkMusicManagerTest cancellation tests asserted reference equality (===) on a CancellationException that withContext(Dispatchers.IO) legitimately recreates -> changed to type/propagation assertions; (2) VisualizerQualityWiringTest asserted a never-created bare key 'settings_visualizer_quality' -> changed to enumerate all settings_visualizer_quality* keys and require an English counterpart in values-en.",
+          "unrelated_to_this_change": true
+        }
+      ],
+      "env_workaround": "C:/Users/内涵哥/.gradle has a non-ASCII path; Gradle 9.5 test worker @argfile classpath dropped gradle-worker-main (ClassNotFoundException: GradleWorkerMain). Fixed via: subst G: C:\\Users\\内涵哥\\.gradle then GRADLE_USER_HOME=G:\\. Background runs need --no-daemon --continue --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g or they abort with 'stop command received'."
+    },
+    "assemble_debug_clean": {
+      "status": "passed",
+      "task": "assembleDebug",
+      "result": "BUILD SUCCESSFUL, 0 warnings (final build after removing the temporary VERIFY debug logging)",
+      "apk": "app/build/outputs/apk/debug/NAS-Music-TV-debug-v1-0-0.apk",
+      "sdk": "D:/tools/Android/Sdk",
+      "emulator": "tv5 (Android TV, android-22), booted with -net-tap tap0; com.lnh.nasmusictv installed and running"
+    },
+    "reverse_control_lan_reachability": {
+      "status": "passed",
+      "scope": "tv5 emulator TAP-bridged to the PC, same 192.168.100.0/24 subnet",
+      "addresses": {
+        "emulator": "192.168.100.90/24 (TAP) + 10.0.2.15/24 (NAT)",
+        "pc": "192.168.100.66/24"
+      },
+      "connectivity": "ping -I 192.168.100.90 192.168.100.66 -> 4/4 received, 0% loss, ~1.3ms",
+      "qr_ip_before": "10.0.2.15 (NAT, unreachable from LAN)",
+      "qr_ip_after": "192.168.100.90 (same subnet)",
+      "note": "Temporary VERIFY logcat lines were used to confirm the value and have since been removed from the shipped code."
+    },
+    "device_nas_integration": {
+      "status": "not_run",
+      "reason": "No physical Android TV device / NAS integration in this run; tv5 emulator only"
+    }
+  },
+  "docs": {
+    "human_readable": "docs/changes/2026-11-01-tv-only-phone-remote-cleanup.md",
+    "machine_readable": "docs/changes/2026-11-01-tv-only-phone-remote-cleanup.json",
+    "changelog": "CHANGELOG.md",
+    "readme": "README.md",
+    "agents_guide": "AGENTS.md",
+    "architecture": "docs/technical-overview.md",
+    "tv_ui_conventions": "docs/conventions-adaptive-ui.md",
+    "checklist": "docs/phone-client-cleanup-checklist.md",
+    "archive_reconciliation": "docs/archive/README.md"
+  },
+  "file_summary": {
+    "added": 2,
+    "modified": 22,
+    "deleted": 1,
+    "modified_code_and_manifest": 16,
+    "modified_documentation": 6,
+    "added_documentation": 2,
+    "remote_service_files_changed": 0,
+    "dependencies_added": 0
+  },
+  "residual_risks": [
+    "VisualizerStage onExit/isTV params unused in body (warnings only; callers unchanged)",
+    "Gallery enum/field/policy/PermissionHelper photo API deliberately retained for old-backup / gallery:<id> decode compat; deep removal needs SDK recompile + gallery test updates",
+    "portraitTouchTarget/responsiveDialogSize are now identity functions; adaptiveColumnsOf(phonePortrait) is a dead parameter on TV but kept for call-site stability",
+    "PinyinMatcher.kt is dead code (no references) and out of scope",
+    "leanback required=false and Android Auto declarations kept per plan separate-decision; distribution policy needs your sign-off",
+    "androidx.leanback:leanback:1.0.0 is declared in app/build.gradle.kts but has ZERO imports across the whole source tree (dead dependency); removal needs a dependency-tree check",
+    "docs/archive/* are historical plan snapshots: they are intentionally NOT rewritten (rewriting would destroy history and they describe intent, not current state). A code-reconciliation index was generated instead (docs/archive/README.md)."
+  ]
+}

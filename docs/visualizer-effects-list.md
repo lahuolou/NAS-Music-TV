@@ -1,8 +1,9 @@
 # 可视化效果列表
 
-> **版本**：（versionCode 196）
-> **更新日期**：2026-10-30
-> **来源**：`app/src/main/java/com/nasmusic/tv/data/model/AppSettings.kt` — `VisualizerTheme` 枚举
+> **版本**：`versionCode 1`（`app/build.gradle.kts`）
+> **更新日期**：2026-11-01
+> **来源**：`app/src/main/java/com/lnh/nasmusictv/data/model/AppSettings.kt` — `VisualizerTheme` 枚举
+> **核对状态**：本文名单与枚举**逐条核对过**（26 个枚举键、tier 分布、`needsParticleBudget` 标记）
 
 共 **26** 个效果，分三档。档位只决定「在哪种画质下可选」：
 
@@ -11,7 +12,7 @@
   不按 tier 一刀切 ⇒ 15 套里 14 套三档全可用，仅 `E14 节拍烟花` 在 LOW 档被挡。
 - **ULTRA** —— `supports()` 要求 `allowFramebuffer`，该字段只有 `HIGH` 为 `true` ⇒ MEDIUM / LOW 一律不提供。
 
-增删历史、实现细节、真机验收记录见 `docs/technical-overview.md` §10。
+增删历史与实现细节见 `docs/technical-overview.md`（§8 可视化）。
 
 ## BASIC 档（9 套）
 
@@ -55,7 +56,7 @@
 | E41 | WORLD | 世界 |
 
 > `E41 世界` 是 WebView + WebGL 的 3D 地球（完全离线）。归 ULTRA 的理由与 E18 不同：2026-10-06 真机故障
-> ——**电视端 WebView 只画首帧**，MEDIUM / LOW 用户会看到一块静止的地球，所有者裁决改为仅最高画质档提供（§10.215）。
+> ——**电视端 WebView 只画首帧**，MEDIUM / LOW 用户会看到一块静止的地球，所有者裁决改为仅最高画质档提供（见 `docs/technical-overview.md` §8 可视化）。
 
 ## 门控的三个特殊项（容易漏）
 
