@@ -57,6 +57,7 @@ Android TV 成为**唯一完整播放客户端**；手机不再打包独立 UI�
 - 反向遥控二维码在桥接 / TAP 网络下显示 NAT 地址：Android `NetworkInterface` 无法枚举桥接网卡地址，改为并读 `/proc/net/fib_trie` 兜底择优（`NetworkUtils.getLocalIpAddress`）
 - 288 个单元测试预存失败：契约 / 门禁测试硬编码旧包名路径 `com/nasmusic/tv/`（59 个文件、143 处），更正为 `com/lnh/nasmusictv/`
 - `NetworkMusicManagerTest` 取消断言与 `VisualizerQualityWiringTest` 过期门禁（断言了从未存在的字符串键）
+- release 构建失败（R8 缺 `org.slf4j.impl.StaticLoggerBinder`）：`jcifs-ng` 传递引入的 `slf4j-api` 在 Android 上无 binding 实现，补 `-dontwarn org.slf4j.**`
 
 ---
 

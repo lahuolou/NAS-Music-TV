@@ -343,6 +343,18 @@
         "drop now-unused import com.lnh.nasmusictv.data.prefs.AppPreferences",
         "purely equivalent refactor, zero runtime change"
       ]
+    },
+    {
+      "path": "app/proguard-rules.pro",
+      "action": "modified",
+      "area": "build-config",
+      "reason": [
+        "fix pre-existing assembleRelease failure: R8 missing class org.slf4j.impl.StaticLoggerBinder"
+      ],
+      "changes": [
+        "add -dontwarn org.slf4j.** (jcifs-ng pulls slf4j-api:1.7.36 which has no Android binding)",
+        "document root cause, pre-existing nature (reproduced on original commit 06f1c76) and follow-up notes"
+      ]
     }
   ],
   "deleted_files": [
@@ -472,9 +484,9 @@
   },
   "file_summary": {
     "added": 2,
-    "modified": 22,
+    "modified": 23,
     "deleted": 1,
-    "modified_code_and_manifest": 16,
+    "modified_code_and_manifest": 17,
     "modified_documentation": 6,
     "added_documentation": 2,
     "remote_service_files_changed": 0,

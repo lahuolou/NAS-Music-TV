@@ -126,6 +126,23 @@
 - **原因**：`class MediaStorePhotoSource : PhotoSource`（`kind = PhotoSourceKind.GALLERY`）是手机 MediaStore 照片来源实现，手机客户端下线后该来源在 TV 路径不再接线。
 - **校验**：全仓 grep `MediaStorePhotoSource` → No matches；其 `GALLERY` 枚举值仍保留（旧备份兼容）。
 
+#### `app/proguard-rules.pro`
+- **动作**：修改（**预存 release 构建缺陷修复**，与本轮改造无因果关系）。
+- **症状**：`:app:assembleRelease` 在 `:app:minifyReleaseWithR8` 失败 ——
+  `ERROR: R8: Missing class org.slf4j.impl.StaticLoggerBinder`
+  （referenced from: `void org.slf4j.LoggerFactory.bind()` and 3 other contexts）。
+- **根因**：`eu.agno3.jcifs:jcifs-ng:2.1.10`（SMB 库）传递引入 `org.slf4j:slf4j-api:1.7.36`；
+  slf4j-api 1.7.36 通过反射查找 `org.slf4j.impl.StaticLoggerBinder` 绑定实现类，
+  而 Android 端本就没有 slf4j binding（业务代码零直接使用 slf4j，仅 jcifs-ng 内部用于日志），
+  R8 视其为缺失类而中止构建。
+- **为何此前未暴露**：CI 的 `build` job 在 push 路径会先因**签名 Secrets 缺失** fail-fast 退出，
+  根本走不到 R8；本地又一直只跑 `assembleDebug`（不走 R8）。
+- **预存性证明**：在**原始提交 `06f1c76`**（本轮改造之前）上用 worktree 复现 `assembleRelease`，
+  报**完全相同**的 R8 错误 ⇒ 与本轮改动无因果关系。
+- **改动**：新增一行 `-dontwarn org.slf4j.**`（按 R8 自己生成的 `missing_rules.txt` 建议），
+  并在注释中写明根因、预存性、复现方式与后续注意事项。
+- **验证**：本地 `assembleRelease` **BUILD SUCCESSFUL**，产出可安装的 release APK。
+
 ### 2.3 修改的文档文件（**以代码为基准重写**，见 §2.5）
 
 #### `CHANGELOG.md`
