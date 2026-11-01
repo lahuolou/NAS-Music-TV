@@ -35,9 +35,9 @@ class ScreenUiModeCoverageTest {
     @Test
     fun `main 源集不得再出现竖屏残留标识符`() {
         val roots = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         ).firstOrNull { it.isDirectory }
         assertNotNull("找不到 main 源码目录（user.dir=${File("").absolutePath}）", roots)
 
@@ -104,7 +104,7 @@ class ScreenUiModeCoverageTest {
             "portraitTouchTarget(48.dp)",
             "adaptiveColumnsOf(widthDp, 6, 3, 6)",
             "responsiveDialogSize(720.dp)",
-            "PHONE_TOUCH_TARGET",
+            "TV_TOUCH_TARGET",
         )
         allowed.forEach { sample ->
             assertTrue(

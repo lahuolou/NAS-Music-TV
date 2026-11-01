@@ -56,9 +56,9 @@ class SettingsGroupCardContractTest {
 
     private fun settingsSource(fileName: String): String {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui/screens/settings/$fileName"),
-            File("app/src/main/java/com/nasmusic/tv/ui/screens/settings/$fileName"),
-            File("../app/src/main/java/com/nasmusic/tv/ui/screens/settings/$fileName"),
+            File("src/main/java/com/lnh/nasmusictv/ui/screens/settings/$fileName"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui/screens/settings/$fileName"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui/screens/settings/$fileName"),
         )
         val found = candidates.firstOrNull { it.isFile }
         assertTrue("找不到 $fileName（user.dir=${File("").absolutePath}）", found != null)

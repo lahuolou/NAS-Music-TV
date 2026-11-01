@@ -248,9 +248,9 @@ class KotlinBlockCommentBalanceTest {
     /** 同时扫 main 与 test（新写的测试文件也可能踩同一个坑） */
     private fun sourceRoots(): List<File> {
         val pairs = listOf(
-            "src/main/java/com/nasmusic/tv" to "src/test/java/com/nasmusic/tv",
-            "app/src/main/java/com/nasmusic/tv" to "app/src/test/java/com/nasmusic/tv",
-            "../app/src/main/java/com/nasmusic/tv" to "../app/src/test/java/com/nasmusic/tv",
+            "src/main/java/com/lnh/nasmusictv" to "src/test/java/com/lnh/nasmusictv",
+            "app/src/main/java/com/lnh/nasmusictv" to "app/src/test/java/com/lnh/nasmusictv",
+            "../app/src/main/java/com/lnh/nasmusictv" to "../app/src/test/java/com/lnh/nasmusictv",
         )
         for ((mainPath, testPath) in pairs) {
             val main = File(mainPath)

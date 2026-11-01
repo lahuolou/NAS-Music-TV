@@ -42,9 +42,9 @@ class MainViewModelConstructionOrderTest {
     /** 定位 `MainViewModel.kt`（AGP 单测 user.dir 是模块目录 `…/app`）。 */
     private fun mainViewModelFile(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/ui/viewmodel/MainViewModel.kt"),
-            File("app/src/main/java/com/nasmusic/tv/ui/viewmodel/MainViewModel.kt"),
-            File("../app/src/main/java/com/nasmusic/tv/ui/viewmodel/MainViewModel.kt")
+            File("src/main/java/com/lnh/nasmusictv/ui/viewmodel/MainViewModel.kt"),
+            File("app/src/main/java/com/lnh/nasmusictv/ui/viewmodel/MainViewModel.kt"),
+            File("../app/src/main/java/com/lnh/nasmusictv/ui/viewmodel/MainViewModel.kt")
         )
         val found = candidates.firstOrNull { it.isFile }
         assertTrue(

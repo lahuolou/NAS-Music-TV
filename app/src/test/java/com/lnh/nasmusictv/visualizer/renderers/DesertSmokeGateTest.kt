@@ -491,7 +491,7 @@ class DesertSmokeGateTest {
     private fun mainSourceRoot(): File {
         var dir = File(System.getProperty("user.dir"))
         repeat(6) {
-            val cand = File(dir, "app/src/main/java/com/nasmusic/tv/visualizer")
+            val cand = File(dir, "app/src/main/java/com/lnh/nasmusictv/visualizer")
             if (cand.isDirectory) return cand
             dir = dir.parentFile ?: return@repeat
         }

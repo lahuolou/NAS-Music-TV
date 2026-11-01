@@ -51,7 +51,7 @@ class VisualizerThemeStringsGateTest {
      * ⛔ 不吃换行（构造参数跨行的项在本枚举里不存在，真出现时由 N2 的条数对撞兜住）。
      */
     private fun themeResKeys(): Map<String, String> {
-        val src = File(appDir(), "java/com/nasmusic/tv/data/model/AppSettings.kt")
+        val src = File(appDir(), "java/com/lnh/nasmusictv/data/model/AppSettings.kt")
         assertTrue("$src 不存在", src.isFile)
         return Regex("""(?m)^[ \t]+([A-Z][A-Z0-9_]*)\(R\.string\.(\w+),""")
             .findAll(src.readText(charset = Charsets.UTF_8))

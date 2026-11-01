@@ -602,7 +602,7 @@ class OrbitalProceduralEnhanceTest {
     private fun codeOfBatchTwo(): String = stripComments(codeOfBatchTwoRaw())
 
     private fun codeOfBatchTwoRaw(): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/BatchTwoRenderers.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/BatchTwoRenderers.kt").readText()
 
     private fun mainSourceRoot(): File {
         var dir = File(System.getProperty("user.dir")!!)

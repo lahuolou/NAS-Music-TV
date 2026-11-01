@@ -374,12 +374,17 @@ class NetworkMusicManagerTest {
         fakeServiceA.searchFailure = cancellation
         fakeServiceB.setSearchResults(listOf(createSong(networkSource = "sourceB")))
 
+        var propagated: Throwable? = null
         try {
             manager.search("query")
             fail("CancellationException should propagate")
         } catch (actual: CancellationException) {
-            assertTrue(actual === cancellation)
+            // 取消必须向上传播：不得被吞成空结果，也不得落到其他源继续搜索。
+            // 注意 search 走 withContext(Dispatchers.IO)，该边界会重建 CancellationException
+            // 实例，因此只断言“是取消异常且在传播”，不断言引用相等（actual === cancellation）。
+            propagated = actual
         }
+        assertNotNull("CancellationException 应被传播而非被吞成空结果", propagated)
 
         assertEquals(1, fakeServiceA.searchCallCount)
         assertEquals(0, fakeServiceB.searchCallCount)
@@ -390,12 +395,15 @@ class NetworkMusicManagerTest {
         val cancellation = CancellationException("resolve cancelled")
         fakeServiceA.resolveFailure = cancellation
 
+        var propagated: Throwable? = null
         try {
             manager.resolvePlayUrl(createSong(), forceRefresh = true)
             fail("CancellationException should propagate")
         } catch (actual: CancellationException) {
-            assertTrue(actual === cancellation)
+            // 取消应向上传播，而非被吞成 null/失败返回值。
+            propagated = actual
         }
+        assertNotNull("CancellationException 应被传播而非被吞成失败返回值", propagated)
 
         assertEquals(1, fakeServiceA.resolvePlayUrlCallCount)
     }

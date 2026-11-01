@@ -53,7 +53,7 @@ import java.io.File
  * 4. **豁免标记用例**：标记必须真的能放行。
  * 5. **空转断言**：真实扫描里断言扫到的 `FocusableSurface(` 调用点数 > 0。
  *
- * 约定见 `docs/technical-overview.md` §10.181。
+ * 约定见 `docs/archive/technical-overview-changelog.md` §10.181。
  */
 class ChipContentWidthScanTest {
 
@@ -257,9 +257,9 @@ class ChipContentWidthScanTest {
      */
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertNotNull(
