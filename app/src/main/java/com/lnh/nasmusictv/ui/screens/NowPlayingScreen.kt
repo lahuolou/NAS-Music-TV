@@ -115,7 +115,7 @@ import com.lnh.nasmusictv.ui.components.VocalToggleButton
 import com.lnh.nasmusictv.ui.components.ProgressSection
 import com.lnh.nasmusictv.ui.components.SongInfoPanel
 import com.lnh.nasmusictv.ui.components.VolumeControl
-import com.lnh.nasmusictv.ui.components.PHONE_TOUCH_TARGET
+import com.lnh.nasmusictv.ui.components.TV_TOUCH_TARGET
 import com.lnh.nasmusictv.ui.components.portraitTouchTarget
 import com.lnh.nasmusictv.ui.components.QualityPickerDialog
 import com.lnh.nasmusictv.ui.components.ImmersiveBackdrop
@@ -635,8 +635,7 @@ fun NowPlayingScreen(
 
         // 空白带修复二轮（2026-09-22 用户反馈 12dp 仍无感，要求干脆去掉）：
         // 手机横屏 padding 全部归零（TV 保持 40/24 不变）。
-        val isPhoneLandscape = com.lnh.nasmusictv.ui.theme.LocalUiMode.current ==
-            com.lnh.nasmusictv.ui.theme.UiMode.PhoneLandscape
+        // TV-only：手机横屏分支已下线，统一走 TV 布局（原 isPhoneLandscape 恒为 false，已折叠）。
 
         // 2026-10-29 适配要求（仅横屏）：刘海/挖孔 + 底部手势安全区。
         // 以 WindowInsets 实测值与「基准留白」取**较大者** —— TV 无安全区（inset=0）
@@ -662,12 +661,12 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(
                 // 左右：基准留白 ∨ 挖孔/侧栏安全区
-                start = maxOf(if (isPhoneLandscape) 16.dp else 32.dp, insetStart),
-                end = maxOf(if (isPhoneLandscape) 16.dp else 32.dp, insetEnd),
+                start = maxOf(32.dp, insetStart),
+                end = maxOf(32.dp, insetEnd),
                 // 顶部保持原值（顶栏在上方单独处理，横屏挖孔多在左右两侧）
-                top = if (isPhoneLandscape) 0.dp else 40.dp,
-                // 2026-10-29「减少底部留白」：TV 24 → 12dp；手机基准 0，取手势安全区
-                bottom = maxOf(if (isPhoneLandscape) 0.dp else 12.dp, insetBottom)
+                top = 40.dp,
+                // 2026-10-29「减少底部留白」：TV 24 → 12dp
+                bottom = maxOf(12.dp, insetBottom)
             )
         ) {
             // 中部：专辑封面(≈45%) + 歌词(≈55%)
@@ -676,15 +675,11 @@ fun NowPlayingScreen(
                     .fillMaxWidth()
                     .weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(
-                    when {
-                        isImmersiveMode -> 24.dp
-                        isPhoneLandscape -> 16.dp
-                        else -> 48.dp
-                    }
+                    if (isImmersiveMode) 24.dp else 48.dp
                 ),
-                // 横屏：顶部对齐（CenterVertically 会在短视口里把内容挤成中间一团、
+                // 顶部对齐（CenterVertically 会在短视口里把内容挤成中间一团、
                 // 上下各留一条缝——正是用户指出的空带来源之一）
-                verticalAlignment = if (isPhoneLandscape) Alignment.Top else Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // 左侧：
                 // - 沉浸模式 = 占满左半屏的大封面，图片右缘虚化并渐变到黑
@@ -750,7 +745,7 @@ fun NowPlayingScreen(
                             // 无歌词时标题/歌手收进黑胶容器、放在盘正下方
                             infoUnderDisc = !showLyrics,
                             // 无歌词态单行标题要横向居中于屏幕，需知道左列左缘位置
-                            contentPaddingStart = if (isPhoneLandscape) 16.dp else 32.dp,
+                            contentPaddingStart = 32.dp,
                             reduceMotion = reduceMotion,
                             paused = overlayVisible,
                             // 5s 无操作 → 黑胶放大（隐藏转场的主体特效）
@@ -951,12 +946,9 @@ fun NowPlayingScreen(
                         .offset(y = -PlayerVisualSpec.LYRICS_TITLE_RISE + lyricsOnTitleDrop)
                 ) {
                     // 工具行 overlay 已贴顶栏（内容区顶带），TV 横屏标题只留 4dp
-                    // 呼吸；手机横屏主 Column 顶距为 0，标题需让出工具行带。
+                    // 呼吸；标题需让出工具行带。
                     Spacer(
-                        modifier = Modifier.height(
-                            if (isPhoneLandscape) 24.dp
-                            else PlayerVisualSpec.LYRICS_TITLE_TOP_PAD
-                        )
+                        modifier = Modifier.height(PlayerVisualSpec.LYRICS_TITLE_TOP_PAD)
                     )
                     SongTitleAndArtist(
                         currentSong = currentSong,

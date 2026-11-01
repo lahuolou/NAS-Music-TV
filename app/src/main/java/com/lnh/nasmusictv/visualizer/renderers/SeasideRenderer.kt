@@ -572,7 +572,7 @@ class SeasideRenderer : RendererFx() {
          *
          * ⚠️ 静态估算**高估了记忆化的收益**：它按「`hash32` 减少 264.8 倍」线性外推，预测单行
          * **≈1.5 ms（11×）**；真机实测只有 **4.92 ms（3.4×）** ⇒ 差额是保留下来的浮点插值、
-         * `Math.floor`、逐行 `setPixels` 与 ART 的寄存器压力（详见 `technical-overview.md` §10.211）。
+         * `Math.floor`、逐行 `setPixels` 与 ART 的寄存器压力（详见 `docs/archive/technical-overview-changelog.md` §10.211）。
          *
          * | 单行耗时 | `rowsPerFrame` | 帧数 | `totalMs` |
          * |---|---|---|---|
@@ -581,7 +581,7 @@ class SeasideRenderer : RendererFx() {
          *
          * ⭐ 「帧数 × 一帧渲染时间」才是**墙钟**（583 行 ÷ 6 行/帧 = 91 帧 × 5.9 fps ≈ **17 s**）——
          * ⚠️ 补齐耗时**由帧率主导、不由烘焙耗时主导** ⇒ 降 `totalMs` 对体感改善有限。
-         * ⭐ 所有者已判定接受（视觉见 `technical-overview.md` §10.211 第五节）。
+         * ⭐ 所有者已判定接受（视觉见 `docs/archive/technical-overview-changelog.md` §10.211 第五节）。
          * ⚠️ 上表是 `SeasideSand` 埋点的定稿前读数；该埋点**已按所有者要求摘除**
          *   （⛔ 保留 [bakeSandTextureStep] 里那次单调钟计时 —— 它是 `sandRowsPerFrame` 的输入）。
          * ⭐ 无论如何 `sandRowsPerFrame` 会**自动**跟上：单行快了，它就多推几行。
@@ -2996,7 +2996,7 @@ const val FOAM_TILE_OFF_DISTURB = 1
             else -> want
         }
         // 诊断日志已定稿并摘除（2026-10-05）。真机实测结论已记入
-        //   docs/technical-overview.md §10.211：singleRowMs=4.92 / rowsPerFrame=6 /
+        //   docs/archive/technical-overview-changelog.md §10.211：singleRowMs=4.92 / rowsPerFrame=6 /
         //   totalMs=2879 / frames=91（沙纹理出现耗时约 17 s，已被所有者定案接受）。
         //   【为什么保留计时器而删日志】sandSingleRowMs 是 sandRowsPerFrame 的输入，
         //   删掉它就只能取常数行数 ⇒ 退回 2 行/帧。

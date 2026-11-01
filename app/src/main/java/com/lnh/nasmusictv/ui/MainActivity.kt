@@ -2,7 +2,6 @@ package com.lnh.nasmusictv.ui
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
@@ -13,9 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.OnBackPressedCallback
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -25,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -169,24 +164,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 手机端系统栏策略：竖屏已整体下线（恒横屏）→ 维持横屏 hide() 现状
-        // （D9 的竖屏 show() 分支已随竖屏下线移除）。
-        // TV 无系统栏，无需处理。
-        // 与下方 setContent 内判断一致：leanback 或 television 特性任一即视为 TV
-        // （很多非认证 TV 盒子只上报 android.hardware.type.television）
-        val isTVDevice = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
-                packageManager.hasSystemFeature("android.hardware.type.television")
-        if (!isTVDevice) {
-            try {
-                WindowCompat.setDecorFitsSystemWindows(window, false)
-                WindowInsetsControllerCompat(window, window.decorView).apply {
-                    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                    hide(WindowInsetsCompat.Type.systemBars())
-                }
-            } catch (e: Exception) {
-                AppLog.e("MainActivity", "system bars setup failed", e)
-            }
-        }
+        // TV-only：电视无系统栏，且手机设备不再作为播放客户端，移除手机端 system-bar 隐藏逻辑。
 
         // SAF 树选择器（§8.8.4）：注入到 ExportCoordinator，导出时启动系统文件夹选择器
         (application as? NasMusicApp)?.exportCoordinator?.let { it.treePickLauncher = {
@@ -213,46 +191,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by viewModel.appSettings.collectAsState(initial = com.lnh.nasmusictv.data.model.AppSettings())
-            val isTVDevice = remember {
-                packageManager.hasSystemFeature("android.software.leanback") ||
-                packageManager.hasSystemFeature("android.hardware.type.television")
-            }
-            // 竖屏整体下线，手机恒横屏 —— 形态因子不再读方向
-            // （Manifest 已声明 screenOrientation="sensorLandscape"，方向是窗口级属性，
-            // Activity 无需再动态设置 requestedOrientation）。
-            val uiMode = com.lnh.nasmusictv.ui.theme.deriveUiMode(isTVDevice)
+            // TV-only：形态因子 UiMode 已随手机 UI 下线移除，统一走 TV 路径。
 
             // 全屏页状态（沉浸模式 / 覆盖层显隐）
             val showMv by viewModel.mvVM.showMv.collectAsState(initial = false)
             val showKaraoke by viewModel.vocalVM.showKaraoke.collectAsState(initial = false)
             val showVisualizer by viewModel.visualizerVM.showVisualizer.collectAsState(initial = false)
 
-            // 手机端系统栏：竖屏下线后恒横屏 → 始终隐藏（沉浸模式 / 全屏页同理），
-            // 竖屏 show() 分支已随竖屏下线移除。
-            LaunchedEffect(isImmersiveMode.value, showMv, showKaraoke, showVisualizer, isTVDevice) {
-                if (isTVDevice) return@LaunchedEffect
-                try {
-                    val controller = WindowInsetsControllerCompat(window, window.decorView)
-                    controller.hide(WindowInsetsCompat.Type.systemBars())
-                } catch (e: Exception) {
-                    AppLog.w("MainActivity", "system bars toggle failed", e)
-                }
-            }
+            // TV-only：电视无系统栏，手机端 system-bar 隐藏逻辑已移除。
 
-            // 密度缩放：手机端紧凑 UI 缩小（density * 0.82），TV 端字号由 FontSize.xx() 函数返回 +6sp 的 TV 值
-            val baseDensity = androidx.compose.ui.platform.LocalDensity.current
-            val uiDensity = if (isTVDevice) androidx.compose.ui.unit.Density(
-                                density = baseDensity.density,
-                                fontScale = baseDensity.fontScale
-                            )
-                            else androidx.compose.ui.unit.Density(
-                                density = baseDensity.density * com.lnh.nasmusictv.ui.theme.CompactSizes.PHONE_UI_SCALE,
-                                fontScale = baseDensity.fontScale
-                            )
             androidx.compose.runtime.CompositionLocalProvider(
-                androidx.compose.ui.platform.LocalDensity provides uiDensity,
-                com.lnh.nasmusictv.ui.theme.LocalPhoneCompact provides !isTVDevice,
-                com.lnh.nasmusictv.ui.theme.LocalUiMode provides uiMode,
                 com.lnh.nasmusictv.ui.theme.LocalFontAdjustment provides settings.fontAdjustment,
                 // 沉浸式播放页的启用条件（最高优先级 A1/A2）：
                 // 直接读用户的**主题意图** AppSettings.darkTheme，而非由色值亮度反推。

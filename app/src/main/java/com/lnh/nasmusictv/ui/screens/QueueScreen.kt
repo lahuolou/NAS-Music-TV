@@ -66,9 +66,7 @@ import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.LocalFocusableContentColor
 import com.lnh.nasmusictv.ui.components.portraitTouchTarget
 import com.lnh.nasmusictv.ui.components.shouldShowFocusVisuals
-import com.lnh.nasmusictv.ui.theme.LocalUiMode
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
-import com.lnh.nasmusictv.ui.theme.UiMode
 import com.lnh.nasmusictv.util.TimeUtils
 import com.lnh.nasmusictv.ui.components.common.SourceBadge
 import kotlinx.coroutines.launch
@@ -121,7 +119,7 @@ fun QueueScreen(
 
     Row(
         modifier = modifier.fillMaxSize().padding(
-            if (LocalUiMode.current == UiMode.PhoneLandscape) 16.dp else 32.dp
+            32.dp
         )
     ) {
         // --- 左侧：当前播放卡片（bg2 = 深紫）---

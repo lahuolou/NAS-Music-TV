@@ -24,7 +24,7 @@ import java.nio.ByteOrder
  *
  * 注：原注释此处写作 "vocalRemovalProcessor" 系重构为 SpectralMaskProcessor
  * 后未同步的 stale comment,2026-09-13 校正。（VocalRemovalProcessor 类本身
- * 已于 2026-09-14 作为死代码删除,算法归档见 docs/technical-overview.md §10.152）
+ * 已于 2026-09-14 作为死代码删除,算法归档见 docs/archive/technical-overview-changelog.md §10.152）
  */
 // 注意：Media3 的 UnstableApi 走 androidx 的 @RequiresOptIn 机制，必须用
 // androidx.annotation.OptIn；kotlin.OptIn 对它无效（且自身会被 lint 标记）。
