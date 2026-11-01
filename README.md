@@ -8,6 +8,23 @@
 
 ---
 
+## 鸣谢与衍生说明
+
+本项目是 [hxzhang2000](https://github.com/hxzhang2000) 原创 [NASMusicTV](https://github.com/hxzhang2000/NASMusicTV) 的衍生分支（提取 TV 版），保留原版 GPL v3 协议与全部既有功能，在此向原创作者致谢。
+
+在原版基础上，本项目进行了以下改动：
+
+- **包名与身份**：`com.nasmusic.tv` → `com.lnh.nasmusictv`，项目名改为 NAS-Music-TV
+- **单平台收敛**：Android TV 成为**唯一完整播放客户端**，手机不再打包独立 UI，仅通过浏览器扫码充当遥控器 / 输入终端
+- **清理手机端残留**：删除手机单列布局（约 187 行）、手机独占的「图库」照片来源 `MediaStorePhotoSource.kt` 及其 `READ_MEDIA_IMAGES` / `READ_MEDIA_VISUAL_USER_SELECTED` 权限、竖屏与手机紧凑 UI 体系；`UiMode` 枚举塌缩为仅 `TV`
+- **反向遥控可达性修复**：`NetworkUtils.getLocalIpAddress()` 新增 `/proc/net/fib_trie` 兜底 + 跨接口全局择优，二维码给出**同网段地址**而非模拟器 NAT 的 `10.0.2.15`（Java `NetworkInterface` 枚举不到 TAP 桥接地址）
+- **遥控安全加固**：6 个内嵌 NanoHTTPD 服务由原绑 `0.0.0.0` 无鉴权，改为**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换
+- **TV 交互默认化**：拼音（全拼 / 首字母）搜索提升为默认主路径（移除 `isTVDevice` 设备门）；文本输入默认 TV 自定义键盘
+- **构建与签名**：修复 release 构建的 R8 / slf4j 缺失类失败；统一发布签名身份并配齐仓库签名 Secrets，自此更新可直接覆盖安装
+- **测试与文档**：修复 288 个因旧包名硬编码导致的单测失败（现 2427 例全绿）；以代码为唯一基准重写各项维护文档
+
+---
+
 ## 它能做什么
 
 ### 媒体源（统一封装在 `BackendAdapter`）
@@ -133,6 +150,6 @@ adb install -r app/build/outputs/apk/debug/NAS-Music-TV-debug-v1-0-0.apk
 ---
 
 ## 许可与第三方组件
-- 音频元数据读写使用 **jaudiotagger 3.0.1**（LGPL）；项目整体授权以仓库 LICENSE 为准（衍生自 hxzhang2000/NASMusicTV，保留 GPL v3）
+- 音频元数据读写使用 **jaudiotagger 3.0.1**（LGPL）；项目整体授权以仓库 LICENSE 为准（衍生自 [hxzhang2000/NASMusicTV](https://github.com/hxzhang2000/NASMusicTV)，保留 GPL v3，见上方「鸣谢与衍生说明」）
 - 人声分离模型 **HT-Demucs**（MIT）；人脸检测 **YuNet**（OpenCV Zoo，Apache-2.0），均经 ONNX Runtime 1.17.1 推理
 - 详细依赖见 `app/build.gradle.kts`
