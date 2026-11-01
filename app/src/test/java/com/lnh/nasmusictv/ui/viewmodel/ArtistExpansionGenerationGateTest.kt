@@ -133,8 +133,7 @@ class ArtistExpansionGenerationGateTest {
         networkMusicManager = app().networkMusicManager,
         baiduService = null,
         jamendoService = null,
-        localMusicRepository = null,
-        isTVDevice = false
+        localMusicRepository = null
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)

@@ -46,8 +46,8 @@ class MoonlitAudioTest {
      */
     @Test
     fun `① updateDt 的首个生产调用方是本效果 且全仓只有这四行`() {
-        val fxDir = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/fx")
-        val rendererDir = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers")
+        val fxDir = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/fx")
+        val rendererDir = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers")
         val callers = (fxDir.listFiles()?.toList() ?: emptyList())
             .filter { it.name.endsWith(".kt") && it.readText().contains(".updateDt(") }
             .map { it.name } +
@@ -422,7 +422,7 @@ class MoonlitAudioTest {
         //    `NONE` 让 `hasFullScreenPass()` 恒假 ⇒ `needsDamageCoalescer` 在 LITE/FULL 同样为真
         //    ⇒ 每帧白补一次整画布 `drawRect`，**铺屏 1.000 屏且肉眼不可见**（本机实测 50–80 fps 时
         //    才暴露，浏览器 harness 看不到这条 pass，因为它活在 Kotlin 基类里）。
-        val rendererDir = File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers")
+        val rendererDir = File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers")
         val overriders = rendererDir.listFiles()!!.filter {
             it.name.endsWith(".kt") &&
                 stripComments(it.readText()).contains("override fun vignetteOverride")
@@ -712,7 +712,7 @@ class MoonlitAudioTest {
         stripComments(mainFileText("MoonlitRenderer.kt"))
 
     private fun mainFileText(name: String): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/$name").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/$name").readText()
 
     /** `PostFx( … )` 的参数表原文（与 [MoonlitSkySeaTest] 同一份夹具，⛔ 不跨类共享以免互相牵制）。 */
     private fun postFxArgs(src: String): String {

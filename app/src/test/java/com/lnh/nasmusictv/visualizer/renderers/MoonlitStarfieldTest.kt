@@ -269,9 +269,9 @@ class MoonlitStarfieldTest {
      * `0x9E3779B9` 这类写法（G11 要判的正是它），不剥注释就是自己判自己红。
      */
     private fun productionSources(): List<String> = listOf(
-        "com/nasmusic/tv/visualizer/renderers/MoonlitRenderer.kt",
-        "com/nasmusic/tv/visualizer/renderers/MoonSeascape.kt",
-        "com/nasmusic/tv/visualizer/renderers/MoonDiskBake.kt",
+        "com/lnh/nasmusictv/visualizer/renderers/MoonlitRenderer.kt",
+        "com/lnh/nasmusictv/visualizer/renderers/MoonSeascape.kt",
+        "com/lnh/nasmusictv/visualizer/renderers/MoonDiskBake.kt",
     ).map { File(mainSourceRoot(), it).readText() }
 
     private fun stripComments(src: String): String {

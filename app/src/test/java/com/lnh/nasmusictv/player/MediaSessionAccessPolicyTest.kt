@@ -36,7 +36,7 @@ import java.io.File
  *
  * ⚠️ 断言一律用 `assertTrue` / `assertFalse`：Kotlin 的 `assert` 在测试 JVM 上是空操作。
  *
- * 详见 `docs/technical-overview.md` §10.165。
+ * 详见 `docs/archive/technical-overview-changelog.md` §10.165。
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -174,7 +174,7 @@ class MediaSessionAccessPolicyTest {
                 "后果：蓝牙 AVRCP / SystemUI / 车机的媒体控制会被 Media3 直接丢弃，\n" +
                 "      表现为「车机暂停/上一曲/下一曲全部无反应」。\n" +
                 "正确做法：连接一律接受，安全边界放到 setAvailableSessionCommands\n" +
-                "         （见 MediaSessionAccessPolicy 与 docs/technical-overview.md §10.165）。",
+                "         （见 MediaSessionAccessPolicy 与 docs/archive/technical-overview-changelog.md §10.165）。",
             hits.isEmpty(),
         )
     }
@@ -232,9 +232,9 @@ class MediaSessionAccessPolicyTest {
 
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertTrue(

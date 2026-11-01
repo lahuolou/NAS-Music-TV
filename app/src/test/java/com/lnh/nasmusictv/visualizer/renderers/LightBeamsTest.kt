@@ -709,15 +709,15 @@ class LightBeamsTest {
     private fun readFile(f: File): String = f.readText()
 
     private fun renderersFile(name: String): File =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/$name")
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/$name")
 
     private fun fxFile(name: String): File =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/fx/$name")
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/fx/$name")
 
     private fun testFxFile(name: String): File {
         var dir = File(System.getProperty("user.dir")!!)
         repeat(6) {
-            val c = File(dir, "app/src/test/java/com/nasmusic/tv/visualizer/fx/$name")
+            val c = File(dir, "app/src/test/java/com/lnh/nasmusictv/visualizer/fx/$name")
             if (c.exists()) return c
             dir = dir.parentFile ?: return@repeat
         }

@@ -144,7 +144,7 @@ class PhotoWallPrefsTest {
     /**
      * `fromKey()` 是 DataStore 那条路的唯一入口。它**必须**永不返回 null ——
      * 返回 null 会让 `AppSettings` 的非空字段变 null，后续 `.name` 直接 NPE
-     * （与 `docs/technical-overview.md` §10.172 记的是同一个坑，只是那条路在 Gson 上）。
+     * （与 `docs/archive/technical-overview-changelog.md` §10.172 记的是同一个坑，只是那条路在 Gson 上）。
      */
     @Test
     fun `transition fromKey never returns null`() {

@@ -289,7 +289,7 @@ class MilkdropTest {
     private fun codeOfE18(): String = stripComments(classBody(readUltra(), "MilkdropRenderer"))
 
     private fun readUltra(): String =
-        mainSourceRoot().resolve("com/nasmusic/tv/visualizer/renderers/UltraRenderers.kt").readText()
+        mainSourceRoot().resolve("com/lnh/nasmusictv/visualizer/renderers/UltraRenderers.kt").readText()
 
     private fun classBody(src: String, name: String): String {
         val head = Regex("""(?m)^\s*(?:(?:internal|open|abstract|private|sealed|final)\s+)*class\s+$name\b""")

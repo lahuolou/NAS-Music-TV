@@ -18,9 +18,9 @@ class PrefsDomainSplitTest {
 
     private fun findRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv/data/prefs"),
-            File("app/src/main/java/com/nasmusic/tv/data/prefs"),
-            File("../app/src/main/java/com/nasmusic/tv/data/prefs"),
+            File("src/main/java/com/lnh/nasmusictv/data/prefs"),
+            File("app/src/main/java/com/lnh/nasmusictv/data/prefs"),
+            File("../app/src/main/java/com/lnh/nasmusictv/data/prefs"),
         )
         val root = candidates.firstOrNull { it.isDirectory }
             ?: throw AssertionError("找不到 prefs 源目录（user.dir=${File("").absolutePath}）")

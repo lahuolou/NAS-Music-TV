@@ -184,9 +184,9 @@ class CacheInventoryGateTest {
     private fun mainSourceRoot(): File {
         // AGP 单测的 user.dir 是模块目录（…/app），CI 与本地也可能是仓库根，两处都试。
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         return candidates.firstOrNull { it.isDirectory }
             ?: error("找不到源码目录（user.dir=${File("").absolutePath}）；" +

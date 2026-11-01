@@ -317,7 +317,7 @@ class MoonPhaseShadowTest {
         assertTrue("经度天平动仍须来自真实历算", src.contains("libWDeg = st.librationLonDeg"))
         assertTrue("纬度天平动仍须来自真实历算", src.contains("libBDeg = st.librationLatDeg"))
         val phase = stripComments(
-            File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonPhase.kt").readText()
+            File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonPhase.kt").readText()
         )
         assertTrue("历算层不许出现显示态常量（伪造历算 = G2 整表空转）", !phase.contains("DISPLAY_ILLUM"))
         assertTrue("MoonPhase.illum 必须仍按距角算 (1−cos e)/2：\n${illumBodyOf(phase)}",
@@ -385,7 +385,7 @@ class MoonPhaseShadowTest {
      * 顺带这也让 [functionBody] 的大括号配对不会被注释里的花括号带偏。
      */
     private fun rendererSource(): String = stripComments(
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/MoonlitRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/MoonlitRenderer.kt").readText()
     )
 
     /** 剥块注释（Kotlin 可嵌套）与行注释，⛔ 必须保持行数一致（豁免/定位按原始行号）。 */

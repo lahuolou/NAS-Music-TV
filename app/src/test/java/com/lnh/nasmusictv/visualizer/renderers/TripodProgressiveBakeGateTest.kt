@@ -287,7 +287,7 @@ internal class TripodProgressiveBakeGateTest {
     // ─────────────────────────── helpers（照 TripodFillMechanismGateTest）───────────────────────────
 
     private fun rendererSource(): String =
-        File(mainSourceRoot(), "com/nasmusic/tv/visualizer/renderers/TripodFogRenderer.kt").readText()
+        File(mainSourceRoot(), "com/lnh/nasmusictv/visualizer/renderers/TripodFogRenderer.kt").readText()
 
     private fun functionBody(name: String): String {
         val src = stripComments(rendererSource())

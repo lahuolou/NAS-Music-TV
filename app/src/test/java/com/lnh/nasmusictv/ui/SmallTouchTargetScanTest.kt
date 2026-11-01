@@ -11,7 +11,7 @@ import java.io.File
  *
  * ## 为什么需要它
  *
- * 竖屏下 `LocalDensity` 被 `PHONE_UI_SCALE = 0.82` 缩放，物理 44dp 需要
+ * TV 触摸目标下限护栏：热区需满足物理 ≥ 44dp（见约定文档 §2.7），物理 44dp 需要
  * **Compose ≥ 53.7dp**（见约定文档 §2.7）。但 `Modifier.size(8.dp).clickable { }`
  * 这种「小视觉元素直接当触摸目标」的写法，热区只有 6.6 物理 dp ——
  * 比 44/48 那些已知问题更糟，却**完全逃过 P0-26 的自查 grep**，
@@ -225,9 +225,9 @@ class SmallTouchTargetScanTest {
      */
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertNotNull(

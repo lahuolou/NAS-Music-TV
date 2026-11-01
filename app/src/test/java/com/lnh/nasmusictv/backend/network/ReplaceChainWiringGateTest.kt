@@ -368,9 +368,9 @@ class ReplaceChainWiringGateTest {
 
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),        // user.dir = app/
-            File("app/src/main/java/com/nasmusic/tv"),    // user.dir = 仓库根
-            File("../app/src/main/java/com/nasmusic/tv")
+            File("src/main/java/com/lnh/nasmusictv"),        // user.dir = app/
+            File("app/src/main/java/com/lnh/nasmusictv"),    // user.dir = 仓库根
+            File("../app/src/main/java/com/lnh/nasmusictv")
         )
         val root = candidates.firstOrNull { it.isDirectory }
         assertTrue(

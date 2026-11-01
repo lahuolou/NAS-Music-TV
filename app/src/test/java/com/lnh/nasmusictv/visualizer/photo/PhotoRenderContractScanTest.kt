@@ -24,7 +24,7 @@ import java.io.File
  * - HOLD 期 `photoB` 仍是刚入场的那张、`p` 恒为 1 ⇒ **整个停留期都在按错误几何绘制**，
  *   直到下一次切换把它换成 `a` 才「跳」回正确形状 —— 用户读作「入场动画没走完就停留了」
  *
- * 真实案例：上机复验（2026-09-24），见 `docs/technical-overview.md` §10.182。
+ * 真实案例：上机复验（2026-09-24），见 `docs/archive/technical-overview-changelog.md` §10.182。
  *
  * ### B. 转场在 `p` 快到 1 时跳过新图绘制
  *
@@ -382,9 +382,9 @@ class PhotoRenderContractScanTest {
      */
     private fun mainSourceRoot(): File {
         val candidates = listOf(
-            File("src/main/java/com/nasmusic/tv"),
-            File("app/src/main/java/com/nasmusic/tv"),
-            File("../app/src/main/java/com/nasmusic/tv"),
+            File("src/main/java/com/lnh/nasmusictv"),
+            File("app/src/main/java/com/lnh/nasmusictv"),
+            File("../app/src/main/java/com/lnh/nasmusictv"),
         )
         val found = candidates.firstOrNull { it.isDirectory }
         assertNotNull(
