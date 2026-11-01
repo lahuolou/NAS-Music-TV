@@ -115,20 +115,8 @@ fun LyricsView(
      */
     topGuardFraction: Float = 0f
 ) {
-    // 手机紧凑模式：恢复原始密度，保持歌词字号不被全局缩放（用户独立调节）
-    if (com.lnh.nasmusictv.ui.theme.LocalPhoneCompact.current) {
-        val baseDensity = androidx.compose.ui.platform.LocalDensity.current
-        androidx.compose.runtime.CompositionLocalProvider(
-            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
-                density = baseDensity.density * com.lnh.nasmusictv.ui.theme.CompactSizes.LYRICS_RECOVER_SCALE,
-                fontScale = baseDensity.fontScale
-            )
-        ) {
-            LyricsViewInner(lyrics, currentTimeMs, modifier, highlightMode, isPlaying, fontSizeMultiplier, onSeekToLine, longPressSeekEnabled, reduceMotion, idleProgress, alignStart, topGuardFraction)
-        }
-    } else {
-        LyricsViewInner(lyrics, currentTimeMs, modifier, highlightMode, isPlaying, fontSizeMultiplier, onSeekToLine, longPressSeekEnabled, reduceMotion, idleProgress, alignStart, topGuardFraction)
-    }
+    // TV-only：移除手机紧凑模式的密度恢复分支，统一走 TV 歌词排版（两分支原本等价）。
+    LyricsViewInner(lyrics, currentTimeMs, modifier, highlightMode, isPlaying, fontSizeMultiplier, onSeekToLine, longPressSeekEnabled, reduceMotion, idleProgress, alignStart, topGuardFraction)
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)

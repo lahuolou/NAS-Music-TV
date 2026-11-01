@@ -36,7 +36,7 @@ internal abstract class PolygonIrisTransition : PhotoTransition {
      * 圆更靠内：菱形需要 `(宽 + 高) / 2`，五角星因为内径只有 0.45 倍还要更大。
      * 用对角线/2 时**四个角会露在形状外面** ⇒ `p` 走到 1、进入 HOLD 之后旧图仍在四角可见，
      * 看起来就是「入场动画没走完就停了」（与 [com.lnh.nasmusictv.visualizer.photo.transitions.GlitchTransition]
-     * 同一类终帧缺陷，见 `docs/technical-overview.md` §10.182）。
+     * 同一类终帧缺陷，见 `docs/archive/technical-overview-changelog.md` §10.182）。
      *
      * 在 [prepare] 里按画布算一次（稳态每帧零分配）。
      */
@@ -180,7 +180,7 @@ internal class IrisStarTransition : PolygonIrisTransition() {
         //   顶点 k 的 x 分量写在 `i = 2k`、y 分量写在 `i = 2k + 1`，两者必须用**同一个半径**。
         //   曾经写成 `val outer = i % 2 == 0`：x 分量拿外径、y 分量拿内径 ⇒ 10 个顶点退化成
         //   「5 个顶点、y 被压到 0.45 倍」的**扁五边形**，既不是星形，`INNER_RATIO` 也形同虚设
-        //   （2026-09-24 上机复验连带发现，见 `docs/technical-overview.md` §10.182）。
+        //   （2026-09-24 上机复验连带发现，见 `docs/archive/technical-overview-changelog.md` §10.182）。
         val k = i / 2
         val outer = k % 2 == 0
         val ang = -PI.toFloat() / 2f + k * PI.toFloat() * 2f / 10f

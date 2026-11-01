@@ -554,16 +554,13 @@ autoDownloadController = com.lnh.nasmusictv.backend.download.AutoDownloadControl
         storageGuard.start(applicationScope)
         applicationScope.launch { songDownloadManager.recoverAfterCrash() }
 
-        // 跨源搜索聚合器（注入本地音乐源，检测 TV 设备以启用拼音搜索）
-        val isTVDevice = packageManager.hasSystemFeature("android.software.leanback") ||
-                packageManager.hasSystemFeature("android.hardware.type.television")
+        // 跨源搜索聚合器（注入本地音乐源；TV 是唯一完整客户端，拼音匹配为主路径）
         searchAggregator = SearchAggregator(
             backendRegistry = backendRegistry,
             networkMusicManager = networkMusicManager,
             baiduService = baiduNetdiskService,
             jamendoService = jamendoService,
             localMusicRepository = localMusicRepository,
-            isTVDevice = isTVDevice,
             // M7（§5.2）：suspend provider，与同文件 appSettings.first() 既有写法一致
             localMusicEnabled = { appPreferences.appSettings.first().localMusicEnabled }
         )

@@ -9,25 +9,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import com.lnh.nasmusictv.R
 import com.lnh.nasmusictv.backend.photo.FaceScanManager
 import com.lnh.nasmusictv.data.model.PhotoScaleMode
-import com.lnh.nasmusictv.backend.photo.PhotoWallAccessPolicy
 import com.lnh.nasmusictv.backend.photo.SafDirectoryPolicy
 import com.lnh.nasmusictv.data.model.AppSettings
-import com.lnh.nasmusictv.ui.components.ConfirmDialog
 import com.lnh.nasmusictv.ui.components.adaptiveColumns
 import com.lnh.nasmusictv.ui.theme.FontSize
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
@@ -99,7 +92,7 @@ data class PhotoWallRuntimeState(
      *
      * ⛔ 与 [mergedCount] 分开是刻意的：开着「仅显示含人像」时两者会差很多
      * （例如「合并后 6938 张、实际展示 2657 张」）。合成一个数会让用户以为**去重**丢了照片
-     * —— 上机复验的真实困惑，见 `docs/technical-overview.md` §10.183。
+     * —— 上机复验的真实困惑，见 `docs/archive/technical-overview-changelog.md` §10.183。
      */
     val displayCount: Int = 0,
     /** 人脸检测进度（阶段 11 填；`total <= 0` ⇒ 不渲染进度行） */
@@ -180,53 +173,13 @@ internal fun PhotoWallSettingsSection(
     val s = state.settings
     val runtime = state.runtime
 
-    // 「先弹说明再触发系统对话框」（§9.4 建议：提升通过率）
-    // 用本地 state 而不是上层参数 —— 它纯属本分区的瞬时 UI 状态，不需要跨层传递。
-    var showGalleryIntro by remember { mutableStateOf(false) }
-
     Column {
         SectionTitle(stringResource(R.string.settings_photo_wall))
         // 卡片：照片来源（标题复用原 SubSectionTitle 字符串，方案 T5）
         SettingsGroupCard(title = stringResource(R.string.settings_photo_wall_sources)) {
-            // 「图库」行**仅手机**渲染（§7.3）：电视没有系统相册，显示它是误导。
-            if (!state.isTV) {
-                // ⛔ 打开图库开关**才**申请权限（§6.2）。`null`（尚未查到）按「需要申请」处理：
-                //    宁可多弹一次说明，也不要静默打开一个没有权限的开关。
-                val needsGrant = runtime.permissionState
-                    ?.let { PhotoWallAccessPolicy.needsPermissionRequest(it) } ?: true
-                SettingSwitch(
-                    label = stringResource(R.string.settings_photo_wall_gallery),
-                    description = stringResource(R.string.settings_photo_wall_gallery_desc),
-                    checked = s.photoWallGalleryEnabled,
-                    onClick = {
-                        when {
-                            s.photoWallGalleryEnabled -> actions.onToggleGallery?.invoke(false)
-                            needsGrant -> showGalleryIntro = true
-                            else -> actions.onToggleGallery?.invoke(true)
-                        }
-                    }
-                )
-
-                // Android 14+「仅选择照片」：说明当前范围 + 给「重新选择照片」入口（§9.6 规则 3）。
-                // 没有这个入口，用户想回到「允许全部」只能自己去系统设置里翻。
-                val isPartial = runtime.permissionState
-                    ?.let { PhotoWallAccessPolicy.isPartial(it) } ?: false
-                if (s.photoWallGalleryEnabled && isPartial) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                        SettingsInfoRow(
-                            stringResource(R.string.settings_photo_wall_gallery),
-                            stringResource(R.string.settings_photo_wall_gallery_partial)
-                        )
-                    }
-                    SettingActionButton(
-                        label = stringResource(R.string.settings_photo_wall_reselect),
-                        description = stringResource(R.string.settings_photo_wall_reselect_desc),
-                        onClick = { actions.onReselectPhotos?.invoke() },
-                        // 打开系统相册选择器（下一级）
-                        trailing = Trail.Arrow,
-                    )
-                }
-            }
+            // 「图库」（MediaStore）来源已随手机客户端下线移除（TV 无系统图库），
+            // 故不再渲染「图库」开关与「重新选择照片」入口。照片墙改以外接 USB/SD/SAF
+            // 与 Jellyfin 为主来源（见下方对应开关）。
 
             SettingSwitch(
                 label = stringResource(R.string.settings_photo_wall_external),
@@ -468,32 +421,6 @@ internal fun PhotoWallSettingsSection(
         }
     }
 
-    // 图库授权说明弹窗（§9.4「建议先弹一句说明再触发系统对话框」）
-    //
-    // ⚠️ 用 `androidx.compose.ui.window.Dialog` 包一层（与 SettingsScreen 的清空下载确认弹窗同款）：
-    // 它自建窗口，因此**不受本分区所在 LazyColumn item 的布局约束**，
-    // 否则 `fillMaxSize()` 在无限高约束下不会铺满，弹窗会缩在列表里。
-    if (showGalleryIntro) {
-        Dialog(
-            onDismissRequest = { showGalleryIntro = false },
-            properties = DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false,
-                usePlatformDefaultWidth = false
-            )
-        ) {
-            ConfirmDialog(
-                title = stringResource(R.string.settings_photo_wall_gallery_intro_title),
-                message = stringResource(R.string.settings_photo_wall_gallery_intro_msg),
-                confirmLabel = stringResource(R.string.settings_photo_wall_gallery_intro_confirm),
-                onConfirm = {
-                    showGalleryIntro = false
-                    actions.onToggleGallery?.invoke(true)
-                },
-                onDismiss = { showGalleryIntro = false }
-            )
-        }
-    }
 }
 
 /**
@@ -514,7 +441,6 @@ private fun rejectTextRes(reason: SafDirectoryPolicy.RejectReason): Int = when (
 private fun enabledSourcesText(s: AppSettings): String {
     // ⚠️ `stringResource` 是 @Composable，**不能**写进 `buildList {}` 之类的普通 lambda
     val labels = listOf(
-        stringResource(R.string.settings_photo_wall_gallery) to s.photoWallGalleryEnabled,
         stringResource(R.string.settings_photo_wall_external) to s.photoWallExternalEnabled,
         stringResource(R.string.settings_photo_wall_jellyfin) to s.photoWallJellyfinEnabled,
     ).filter { it.second }.map { it.first }

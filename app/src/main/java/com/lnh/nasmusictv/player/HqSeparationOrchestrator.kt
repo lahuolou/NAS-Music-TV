@@ -27,7 +27,7 @@ import java.io.File
 /**
  * 建 ONNX 会话所需的最低**系统可用内存**（MB）。
  *
- * 依据（docs/technical-overview.md §10.246 实测）：fp16 原件 150.9MB + CPU EP 把 148 个
+ * 依据（docs/archive/technical-overview-changelog.md §10.246 实测）：fp16 原件 150.9MB + CPU EP 把 148 个
  * 初始化器物化为 fp32 的 301.7MB + 24,917 节点图 ⇒ 常驻 ≈459MB，建会话峰值更高；
  * 这里按 ~1.5× 取 700MB 作为「可以尝试」的下限。
  *
@@ -77,7 +77,7 @@ internal fun isHqModelLoadMemoryInsufficient(availMb: Long?): Boolean =
  *
  * 历史备忘：曾有一个更精细的 4 阶 Linkwitz-Riley DSP 实现
  * （VocalRemovalProcessor），已被 SpectralMaskProcessor 取代，2026-09-14 作为
- * 死代码删除；其算法与参数已归档于 docs/technical-overview.md §10.152 与
+ * 死代码删除；其算法与参数已归档于 docs/archive/technical-overview-changelog.md §10.152 与
  * docs/archive/vocal-removal-approach-b-dsp.md，可供高保真/离线批处理场景复原。
  * 与本类无关，不要混淆。
  * ─────────────────────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ import java.nio.ByteOrder
  * 历史备忘：曾有一个更精细的 4 阶 Linkwitz-Riley DSP 实现
  * （VocalRemovalProcessor,CPU 约 8×、取向"温和"）。因 K 歌用户对残人声零容忍、
  * 对低频损失几乎无感,已被本类的"激进"取向取代。该类 2026-09-14 作为死代码删除,
- * 算法与参数归档于 docs/technical-overview.md §10.152 与
+ * 算法与参数归档于 docs/archive/technical-overview-changelog.md §10.152 与
  * docs/archive/vocal-removal-approach-b-dsp.md，供高保真/离线批处理场景复原。
  * ─────────────────────────────────────────────────────────────────────
  */

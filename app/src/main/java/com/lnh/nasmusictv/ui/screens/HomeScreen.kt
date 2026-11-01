@@ -1,7 +1,6 @@
 package com.lnh.nasmusictv.ui.screens
 
 import com.lnh.nasmusictv.ui.theme.FontSize
-import com.lnh.nasmusictv.ui.theme.LocalUiMode
 import com.lnh.nasmusictv.ui.theme.UiMode
 
 import androidx.compose.foundation.background
@@ -106,8 +105,7 @@ fun HomeScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val listBackHandler = LocalListBackHandler.current
-    // LazyColumn 内容 lambda 不是 @Composable 上下文，形态必须在组合内先读出来
-    val uiMode = LocalUiMode.current
+    // LazyColumn 内容 lambda 不是 @Composable 上下文
 
     // F2-3 首页列表化：首次进入自动生成智能电台批次（只生成不播放；防重入在 MainViewModel）
     LaunchedEffect(Unit) { onLoadSmartRadio?.invoke() }
@@ -149,7 +147,7 @@ fun HomeScreen(
         // 1.5 当前播放卡片（有歌曲正在播放时显示）
         // 手机横屏可用高度有限且 TV 顶栏已有「正在播放」入口 → 手机横屏隐藏
         // （B1：TV 端保持原显示条件，行为不变）
-        if (currentSong != null && uiMode == UiMode.TV) {
+        if (currentSong != null) {
             item(key = "now_playing") {
                 NowPlayingCard(
                     song = currentSong,
