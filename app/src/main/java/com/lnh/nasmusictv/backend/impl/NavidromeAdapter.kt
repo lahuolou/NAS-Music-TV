@@ -11,6 +11,7 @@ import com.lnh.nasmusictv.data.model.Song
 import com.lnh.nasmusictv.data.model.SongTechnicalInfo
 import com.lnh.nasmusictv.data.model.VersionInfo
 import com.lnh.nasmusictv.util.AppLog
+import com.lnh.nasmusictv.util.ConnectionErrorDiagnostics
 import com.lnh.nasmusictv.util.EncodingUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -40,6 +41,11 @@ class NavidromeAdapter : BackendAdapter {
     private var apiToken: String = ""
     override var serverName: String = "Navidrome"
         private set
+
+    /** 最近一次连接失败的简短原因（透传给 UI，避免只显示泛化"连接失败"） */
+    @Volatile
+    private var _lastErrorDetail: String = ""
+    override val lastErrorDetail: String get() = _lastErrorDetail
 
     // B11 修复：固定 salt + token，避免 buildCoverUrl 每次生成新 salt
     // 导致封面 URL 不稳定、Coil 缓存 key 失效、同一封面反复下载。
@@ -92,24 +98,46 @@ class NavidromeAdapter : BackendAdapter {
     }
 
     override suspend fun testConnection(): Boolean = withContext(Dispatchers.IO) {
+        _lastErrorDetail = ""
         try {
             val url = buildRestUrl("ping")
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string() ?: return@use false
-                if (!response.isSuccessful) return@use false
+                val body = response.body?.string()
+                if (!response.isSuccessful) {
+                    _lastErrorDetail = "HTTP ${response.code}：服务器拒绝了 ping 请求（地址/端口或凭据问题）"
+                    return@use false
+                }
+                if (body.isNullOrBlank()) {
+                    _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
+                    return@use false
+                }
                 val json = gson.fromJson(body, JsonObject::class.java)
-                val subsonic = json.getAsJsonObject("subsonic-response") ?: return@use false
-                val status = subsonic.get("status")?.asString ?: return@use false
+                val subsonic = json.getAsJsonObject("subsonic-response")
+                if (subsonic == null) {
+                    _lastErrorDetail = "响应格式异常：未包含 subsonic-response（该地址可能不是 Navidrome/Subsonic 服务）"
+                    return@use false
+                }
+                val status = subsonic.get("status")?.asString
+                if (status == null) {
+                    _lastErrorDetail = "响应缺少 status 字段，无法判断连接状态"
+                    return@use false
+                }
                 val version = subsonic.get("version")?.asString ?: ""
                 if (version.isNotBlank()) {
                     serverName = "Navidrome $version"
                     apiVersion = "Subsonic API $version"
                 }
-                status == "ok"
+                if (status != "ok") {
+                    _lastErrorDetail = "服务器返回失败状态：$status（凭据错误或账户无权限）"
+                    false
+                } else {
+                    true
+                }
             }
         } catch (e: Exception) {
             AppLog.w("NavidromeAdapter", "testConnection failed", e)
+            _lastErrorDetail = ConnectionErrorDiagnostics.diagnose(e)
             false
         }
     }

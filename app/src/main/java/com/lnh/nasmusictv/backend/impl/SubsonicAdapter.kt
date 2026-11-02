@@ -11,6 +11,7 @@ import com.lnh.nasmusictv.data.model.Playlist
 import com.lnh.nasmusictv.data.model.Song
 import com.lnh.nasmusictv.data.model.VersionInfo
 import com.lnh.nasmusictv.util.AppLog
+import com.lnh.nasmusictv.util.ConnectionErrorDiagnostics
 import com.lnh.nasmusictv.util.EncodingUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -50,6 +51,11 @@ class SubsonicAdapter : BackendAdapter {
 
     override var serverName: String = "Subsonic"
         private set
+
+    /** 最近一次连接失败的简短原因（透传给 UI，避免只显示泛化"连接失败"） */
+    @Volatile
+    private var _lastErrorDetail: String = ""
+    override val lastErrorDetail: String get() = _lastErrorDetail
 
     private val gson = Gson()
     private val client: OkHttpClient by lazy {
@@ -91,24 +97,46 @@ class SubsonicAdapter : BackendAdapter {
     }
 
     override suspend fun testConnection(): Boolean = withContext(Dispatchers.IO) {
+        _lastErrorDetail = ""
         try {
             val url = buildRestUrl("ping")
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string() ?: return@use false
-                if (!response.isSuccessful) return@use false
+                val body = response.body?.string()
+                if (!response.isSuccessful) {
+                    _lastErrorDetail = "HTTP ${response.code}：服务器拒绝了 ping 请求（地址/端口或凭据问题）"
+                    return@use false
+                }
+                if (body.isNullOrBlank()) {
+                    _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
+                    return@use false
+                }
                 val json = gson.fromJson(body, JsonObject::class.java)
-                val subsonic = json.getAsJsonObject("subsonic-response") ?: return@use false
-                val status = subsonic.get("status")?.asString ?: return@use false
+                val subsonic = json.getAsJsonObject("subsonic-response")
+                if (subsonic == null) {
+                    _lastErrorDetail = "响应格式异常：未包含 subsonic-response（该地址可能不是 Subsonic 服务）"
+                    return@use false
+                }
+                val status = subsonic.get("status")?.asString
+                if (status == null) {
+                    _lastErrorDetail = "响应缺少 status 字段，无法判断连接状态"
+                    return@use false
+                }
                 val version = subsonic.get("version")?.asString ?: ""
                 if (version.isNotBlank()) {
                     serverName = "Subsonic $version"
                     apiVersion = "Subsonic API $version"
                 }
-                status == "ok"
+                if (status != "ok") {
+                    _lastErrorDetail = "服务器返回失败状态：$status（凭据错误或账户无权限）"
+                    false
+                } else {
+                    true
+                }
             }
         } catch (e: Exception) {
             AppLog.w("SubsonicAdapter", "testConnection failed", e)
+            _lastErrorDetail = ConnectionErrorDiagnostics.diagnose(e)
             false
         }
     }
