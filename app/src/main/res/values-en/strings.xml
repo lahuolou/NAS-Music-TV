@@ -203,6 +203,7 @@
     <string name="server_username">Username</string>
     <string name="server_password">Password</string>
     <string name="server_connected">Connected</string>
+    <string name="server_connected_badge">Connected</string>
     <string name="server_disconnected">Disconnected</string>
     <string name="server_disconnect">Disconnect</string>
     <string name="settings_disconnect_desc">Disconnect from current NAS backend</string>
@@ -1444,6 +1445,16 @@
     <string name="cfg_web_js_sending">Sending…</string>
     <string name="cfg_web_js_done">Done</string>
     <string name="cfg_web_js_send_failed">Send failed: </string>
+    <string name="cfg_web_username_placeholder">Account for this service</string>
+    <string name="cfg_web_password_placeholder">Password for this service</string>
+    <string name="cfg_web_root_path">Music directory (relative root path, optional)</string>
+    <string name="cfg_web_root_path_placeholder">e.g. /music</string>
+    <string name="cfg_web_smb_share">SMB share name</string>
+    <string name="cfg_web_smb_domain">SMB workgroup/domain (optional)</string>
+    <string name="cfg_web_url_label_smb">Server address (host[:port], e.g. smb://192.168.1.10:445)</string>
+    <string name="cfg_web_js_smb_share_required">Please enter the SMB share name</string>
+    <string name="cfg_msg_web_ui_smb_scheme">For SMB, enter the host and port (e.g. smb://192.168.1.10:445); enter the share name separately</string>
+    <string name="cfg_msg_web_ui_smb_share_slash">The SMB share name must not contain slashes</string>
     <string name="model_msg_boundary_missing">Missing multipart boundary. Content-Type: %1$s</string>
     <string name="model_msg_file_too_small">File too small (%1$dMB; ~166MB expected). Make sure you upload htdemucs_ft_vocals_fp16weights.onnx</string>
     <string name="model_msg_sha_mismatch">SHA-256 mismatch: expected %1$s…, got %2$s…. Make sure you upload the official htdemucs_ft_vocals_fp16weights.onnx (~158MB)</string>

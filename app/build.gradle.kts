@@ -5,7 +5,7 @@ plugins {
 }
 
 // 应用版本号（发布时单点修改；APK 命名与 defaultConfig.versionName 同源）
-val appVersionName = "1.0.1"
+val appVersionName = "1.0.2"
 
 fun readKeystoreProperty(name: String): String {
     val f = rootProject.file("keystore.properties")
@@ -46,7 +46,7 @@ android {
         applicationId = "com.lnh.nasmusictv"
         minSdk = 22
         targetSdk = 34
-        versionCode = 2
+        versionCode = 3
         versionName = appVersionName
 
         ndk {

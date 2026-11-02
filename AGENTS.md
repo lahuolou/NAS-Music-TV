@@ -209,7 +209,7 @@ release 开启 minify + shrinkResources。`proguard-rules.pro` 保留 `data.mode
 
 ### 4.13 反向遥控与本地 IP
 - 6 个 NanoHTTPD 服务器：`LocalInputServer`(18080)、`BackupTransferServer`(18081)、`RemoteControlServer`(18082)、`ModelTransferServer`(18083)、`PlaylistUploadServer`(18084)、`ServerConfigTransferServer`(18085)。`RemoteControlServer` **仅在进入 K 歌/MTV 模式时**由 `MainViewModel` 启动，不是常驻。
-- 安全：原绑 `0.0.0.0` 且无鉴权，现由 `LocalServerAuth` 发放**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换。
+- 安全：原绑 `0.0.0.0` 且无鉴权，现由 `LocalServerAuth` 发放 **token** 写入二维码 URL（`?t=...`），同类服务共享同一 token（进程内稳定）。⚠️ **不要改成「每实例 newToken」**——屏幕重组会新建 server 实例并生成新二维码，而旧实例仍占端口（`EADDRINUSE`），导致二维码 token ≠ 监听实例 token → 手机扫码 403。
 - ⛔ **`NetworkUtils.getLocalIpAddress()` 必须读 `/proc/net/fib_trie`**：Java `NetworkInterface.getNetworkInterfaces()`（getifaddrs）**枚举不到 TAP 桥接地址**（模拟器上只看到 NAT `10.0.2.15`），但内核 `fib_trie`（world-readable）里有 `host LOCAL` 条目。实现上跨接口收集 NetworkInterface 地址 + 读 `fib_trie` 补齐 + 按 `ipScore`（`192.168.`=5 > `10.`=4 > `10.0.2.`=1 > `169.254.`=0）全局择优。缺了这一步，二维码会给出不可达的 NAT 地址，手机扫码连不上。
 
 ### 4.14 其它

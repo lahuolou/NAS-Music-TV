@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -40,6 +41,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
@@ -62,6 +64,7 @@ import com.lnh.nasmusictv.ui.components.branches.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.lnh.nasmusictv.ui.components.song.LocalCurrentSongId
+import com.lnh.nasmusictv.ui.components.common.ConnectedBadge
 import com.lnh.nasmusictv.ui.viewmodel.MainViewModel
 import com.lnh.nasmusictv.data.model.Screen
 import kotlinx.coroutines.delay
@@ -265,6 +268,8 @@ fun AppRoot(
                 ) {
                     TvTopNavBar(
                         currentScreen = currentScreen,
+                        isConnected = isConnected,
+                        serverDisplayName = serverDisplayName,
                         onNavigate = { viewModel.navVM.navigateTo(it) },
                     )
                 }
@@ -500,12 +505,18 @@ fun AppRoot(
  * 由 `AppRoot` 内联代码原样抽为具名 composable（方案 §8.6 骨架要求），
  * **零行为变化** —— 6 项导航（首页/播放/曲库/我的/队列/设置）+ 窄屏横向滚动。
  *
+ * 品牌区（logo + 文字）随连接状态切换：
+ * - 已连接 → 服务器名 + 「已连接」徽章（[ConnectedBadge]）
+ * - 未连接 → 应用名 "NAS Music TV"
+ *
  * 右上角方向切换按钮已随竖屏下线移除（恒横屏，无切换目标）。
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvTopNavBar(
     currentScreen: Screen,
+    isConnected: Boolean,
+    serverDisplayName: String,
     onNavigate: (Screen) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -532,7 +543,28 @@ private fun TvTopNavBar(
                 Text(text = "\u266A", color = NasMusicColors.TextPrimary, fontSize = FontSize.subtitle())
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = "NAS Music", color = NasMusicColors.TextPrimary, fontSize = FontSize.subtitle())
+            if (isConnected) {
+                // 已连接：显示当前服务器名称（过长时省略，避免顶栏挤压导航项）
+                Text(
+                    text = serverDisplayName.ifBlank { stringResource(R.string.app_name) },
+                    color = NasMusicColors.TextPrimary,
+                    fontSize = FontSize.subtitle(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 220.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                ConnectedBadge()
+            } else {
+                // 未连接：显示应用名
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = NasMusicColors.TextPrimary,
+                    fontSize = FontSize.subtitle(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         // 导航项（外层固定宽度右对齐；内层可横向滑动——手机窄屏滚动浏览全部 tab）

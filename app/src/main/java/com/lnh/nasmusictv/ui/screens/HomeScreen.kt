@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -57,6 +58,7 @@ import com.lnh.nasmusictv.ui.LocalListBackHandler
 import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.MarqueeText
 import com.lnh.nasmusictv.ui.components.common.SectionHeader
+import com.lnh.nasmusictv.ui.components.common.ConnectedBadge
 import com.lnh.nasmusictv.ui.components.LocalFocusableContentColor
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
 import androidx.compose.runtime.getValue
@@ -320,13 +322,29 @@ private fun WelcomeSection(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
-                Text(
-                    text = if (isConnected) serverDisplayName.ifBlank { stringResource(R.string.app_name) }
-                           else stringResource(R.string.app_name),
-                    color = NasMusicColors.TextPrimary,
-                    fontSize = FontSize.display(),
-                    fontWeight = FontWeight.Bold
-                )
+                // 标题：已连接时显示服务器名 + 「已连接」徽章；未连接时显示应用名
+                if (isConnected) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = serverDisplayName.ifBlank { stringResource(R.string.app_name) },
+                            color = NasMusicColors.TextPrimary,
+                            fontSize = FontSize.display(),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 320.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        ConnectedBadge()
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        color = NasMusicColors.TextPrimary,
+                        fontSize = FontSize.display(),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
                     text = if (isLibraryLoading) stringResource(R.string.common_loading)
                            else if (!isConnected) stringResource(R.string.common_not_connected)
