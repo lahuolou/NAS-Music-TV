@@ -42,22 +42,32 @@ class ServerConfigTransferServer(
         private const val MAX_BODY_BYTES = 64L * 1024
     }
 
-    /** P1-1 同款：一次性鉴权 token（随二维码下发，重启即更换） */
-    private val authToken = LocalServerAuth.newToken()
+    /** P1-1 同款鉴权 token（进程级稳定，见 [LocalServerAuth.stableToken]——修复扫码 403） */
+    private val authToken = LocalServerAuth.stableToken("cfg")
 
     /** 带 token 的二维码 URL（手机浏览器打开后种 Cookie） */
     fun buildUrl(ip: String): String = "http://$ip:$port/?t=$authToken"
 
-    fun startServer(): Boolean = try {
-        start(SOCKET_READ_TIMEOUT, false)
-        AppLog.i(TAG, "started on port $port")
-        true
-    } catch (e: IOException) {
-        AppLog.e(TAG, "start failed on port $port", e)
-        false
+    /** 幂等：同实例重复 start/stop 直接短路，避免重复 bind（EADDRINUSE）与重复日志 */
+    @Volatile
+    private var started = false
+
+    fun startServer(): Boolean {
+        if (started) return true
+        return try {
+            start(SOCKET_READ_TIMEOUT, false)
+            started = true
+            AppLog.i(TAG, "started on port $port")
+            true
+        } catch (e: IOException) {
+            AppLog.e(TAG, "start failed on port $port", e)
+            false
+        }
     }
 
     fun stopServer() {
+        if (!started) return
+        started = false
         try {
             stop()
             AppLog.i(TAG, "stopped")

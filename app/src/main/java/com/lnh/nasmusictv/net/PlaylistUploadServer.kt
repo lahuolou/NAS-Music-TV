@@ -45,8 +45,8 @@ class PlaylistUploadServer(
 
     private var server: Impl? = null
 
-    /** P1-1：一次性鉴权 token，随二维码 URL 下发（server 重启即更换） */
-    private val authToken = LocalServerAuth.newToken()
+    /** P1-1 鉴权 token（进程级稳定，见 [LocalServerAuth.stableToken]——修复扫码 403） */
+    private val authToken = LocalServerAuth.stableToken("playlist")
 
     /** P1-1：带 token 的二维码 URL（手机浏览器打开后种 Cookie） */
     fun buildUrl(ip: String): String = "http://$ip:$port/?t=$authToken"
