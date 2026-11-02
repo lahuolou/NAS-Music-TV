@@ -59,15 +59,21 @@ class ModelTransferServer(
         }
     }
 
-    /** P1-1：一次性鉴权 token，随二维码 URL 下发（server 重启即更换） */
-    private val authToken = LocalServerAuth.newToken()
+    /** P1-1 鉴权 token（进程级稳定，见 [LocalServerAuth.stableToken]——修复扫码 403） */
+    private val authToken = LocalServerAuth.stableToken("model")
 
     /** P1-1：带 token 的二维码 URL（手机浏览器打开后种 Cookie） */
     fun buildUrl(ip: String): String = "http://$ip:$MODEL_TRANSFER_PORT/?t=$authToken"
 
+    /** 幂等：同实例重复 start/stop 直接短路，避免重复 bind（EADDRINUSE）与重复日志 */
+    @Volatile
+    private var started = false
+
     fun startServer(): Boolean {
+        if (started) return true
         return try {
             start(SOCKET_READ_TIMEOUT, false)
+            started = true
             AppLog.i(TAG, "Started on port $MODEL_TRANSFER_PORT")
             true
         } catch (e: IOException) {
@@ -77,6 +83,8 @@ class ModelTransferServer(
     }
 
     fun stopServer() {
+        if (!started) return
+        started = false
         try {
             stop()
             AppLog.i(TAG, "Stopped")

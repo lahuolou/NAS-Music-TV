@@ -42,8 +42,8 @@ class RemoteControlServer(
     private var server: Impl? = null
     private var serverUrl: String? = null
 
-    /** P1-1：一次性鉴权 token，随二维码 URL 下发（server 重启即更换） */
-    private val authToken = LocalServerAuth.newToken()
+    /** P1-1 鉴权 token（进程级稳定，见 [LocalServerAuth.stableToken]——修复扫码 403） */
+    private val authToken = LocalServerAuth.stableToken("remote")
 
     /**
      * 启动服务器
