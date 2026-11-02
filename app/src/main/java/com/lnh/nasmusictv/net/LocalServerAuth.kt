@@ -12,11 +12,11 @@ import java.util.UUID
  * 向输入框注入文本、覆盖模型文件 / 磁盘填充。
  *
  * 机制（对既有「扫码 → 手机浏览器打开」流程零改动）：
- * 1. server 启动时生成一次性随机 token（[newToken]）；
+ * 1. server 启动时获取 token（[stableToken]，同类服务进程内恒定）；
  * 2. 二维码 URL 携带 `?t=<token>`（各 server 的 buildUrl / RemoteControlServer.start）；
  * 3. serve() 头部经 [isAuthorized] 校验：query `t=` 或 Cookie `auth=` 命中即放行；
  * 4. 页面响应带 `Set-Cookie: auth=<token>`，手机浏览器后续 /api 接口同源请求自动携带；
- * 5. token 每次启动重新生成——旧页面 / 旧二维码在 server 重启后自然失效。
+ * 5. token 在进程生命周期内恒定（见 [stableToken] 的安全取舍说明）。
  *
  * 边界说明：token 随二维码出现在电视屏幕上，本机制把访问者限定为「能看到二维码的人」，
  * 防的是同网段其他设备的未授权访问；HTTP 明文传输属项目既定取舍（cleartext 支持）。

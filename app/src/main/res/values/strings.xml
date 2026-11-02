@@ -207,6 +207,7 @@
     <string name="server_username">用户名</string>
     <string name="server_password">密码</string>
     <string name="server_connected">已连接</string>
+    <string name="server_connected_badge">已连接</string>
     <string name="server_disconnected">已断开连接</string>
     <string name="server_disconnect">断开</string>
     <string name="settings_disconnect_desc">断开与当前 NAS 后端的连接</string>

@@ -18,7 +18,7 @@
 - **单平台收敛**：Android TV 成为**唯一完整播放客户端**，手机不再打包独立 UI，仅通过浏览器扫码充当遥控器 / 输入终端
 - **清理手机端残留**：删除手机单列布局（约 187 行）、手机独占的「图库」照片来源 `MediaStorePhotoSource.kt` 及其 `READ_MEDIA_IMAGES` / `READ_MEDIA_VISUAL_USER_SELECTED` 权限、竖屏与手机紧凑 UI 体系；`UiMode` 枚举塌缩为仅 `TV`
 - **反向遥控可达性修复**：`NetworkUtils.getLocalIpAddress()` 新增 `/proc/net/fib_trie` 兜底 + 跨接口全局择优，二维码给出**同网段地址**而非模拟器 NAT 的 `10.0.2.15`（Java `NetworkInterface` 枚举不到 TAP 桥接地址）
-- **遥控安全加固**：6 个内嵌 NanoHTTPD 服务由原绑 `0.0.0.0` 无鉴权，改为**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换
+- **遥控安全加固**：6 个内嵌 NanoHTTPD 服务由原绑 `0.0.0.0` 无鉴权，改为 **token 鉴权**写入二维码 URL（`?t=...`），token 在进程生命周期内稳定
 - **TV 交互默认化**：拼音（全拼 / 首字母）搜索提升为默认主路径（移除 `isTVDevice` 设备门）；文本输入默认 TV 自定义键盘
 - **构建与签名**：修复 release 构建的 R8 / slf4j 缺失类失败；统一发布签名身份并配齐仓库签名 Secrets，自此更新可直接覆盖安装
 - **测试与文档**：修复 288 个因旧包名硬编码导致的单测失败（现 2427 例全绿）；以代码为唯一基准重写各项维护文档
@@ -70,7 +70,7 @@
 | 18084 | `PlaylistUploadServer` | 歌单上传 | 按需 |
 | 18085 | `ServerConfigTransferServer` | 服务器配置传输 | 按需 |
 
-安全：原绑 `0.0.0.0` 无鉴权，现改为**一次性 token** 写入二维码 URL（`?t=...`），服务重启即换。本地 IP 经 `util/NetworkUtils.getLocalIpAddress()` 选取（避开模拟器 NAT，优先局域网段）。
+安全：原绑 `0.0.0.0` 无鉴权，现改为 **token 鉴权**写入二维码 URL（`?t=...`），token 在进程生命周期内稳定（同类服务共享，避免二维码与监听实例 token 错位导致扫码 403）。本地 IP 经 `util/NetworkUtils.getLocalIpAddress()` 选取（避开模拟器 NAT，优先局域网段）。
 
 ### 其它
 - **电台**：公共电台目录（标签筛选、直播流即点即播）；**天气电台**：按实时天气匹配心情电台

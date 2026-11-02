@@ -164,7 +164,7 @@ NasMusicApp.kt  应用 + DI
 | 18085 | `ServerConfigTransferServer` | 服务器配置传输 | 按需 |
 
 - 二维码：`com.google.zxing:core:3.5.3`。本地 IP：`util/NetworkUtils.getLocalIpAddress()`。
-- 安全：`LocalServerAuth` 一次性 token 写入二维码 URL（`?t=...`），服务重启即换（原绑 `0.0.0.0` 无鉴权已改）。
+- 安全：`LocalServerAuth` token 写入二维码 URL（`?t=...`），同类服务共享同一 token、进程生命周期内稳定（原绑 `0.0.0.0` 无鉴权已改）。⚠️ 必须稳定：若每实例重新生成，屏幕重组会令二维码 token 与实际监听实例 token 错位 → 扫码 403。
 - `RemoteControlHtml.kt`：遥控页 HTML；`HttpRequestBody` / `MultipartBoundaryStreamer` 绕过 NanoHTTPD 2.3.1 不解析 body 的限制。
 
 ### 10.1 `NetworkUtils.getLocalIpAddress()` 多 IP 择优（实测要点）
