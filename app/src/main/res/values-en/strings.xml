@@ -1569,4 +1569,5 @@
     <string name="feiniu_err_token_expired">Login token has expired. Please reconnect.</string>
     <string name="feiniu_err_network">Cannot reach the server (%1$s). Check the network and address.</string>
     <string name="feiniu_err_no_token">Login succeeded but the response contained no userToken</string>
+    <string name="home_hero_featured">Featured</string>
 </resources>

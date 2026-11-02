@@ -34,7 +34,9 @@ class BackupResultVisibilityGateTest {
     private fun surfacedByToast(src: String, key: String): Boolean {
         val effect = Regex("LaunchedEffect\\($key\\)\\s*\\{").find(src) ?: return false
         val body = src.substring(effect.range.last).take(600)
-        return Regex("""Toast\.makeText\([^;]*(?:\.text|Message)""").containsMatchIn(body)
+        // 接受原生 `Toast.makeText(...)` 或统一出口 `AppToast.show(...)` —— 两者都等价于
+        // 「结果有屏幕级 Toast 呈现」；门禁只钉"必须弹 Toast"这一事实，不钉具体写法。
+        return Regex("""(?:Toast\.makeText|AppToast\.show)\([^;]*(?:\.text|Message)""").containsMatchIn(body)
     }
 
     @Test

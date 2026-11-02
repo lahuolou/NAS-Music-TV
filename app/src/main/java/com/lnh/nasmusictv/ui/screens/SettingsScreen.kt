@@ -78,6 +78,7 @@ import com.lnh.nasmusictv.ui.screens.settings.LyricsKaraokeSettingsState
 import com.lnh.nasmusictv.ui.screens.settings.LogsSettingsActions
 import com.lnh.nasmusictv.ui.screens.settings.LogsSettingsSection
 import com.lnh.nasmusictv.ui.screens.settings.LogsSettingsState
+import com.lnh.nasmusictv.util.AppToast
 import com.lnh.nasmusictv.util.LogSnapshot
 import com.lnh.nasmusictv.util.LogStore
 import com.lnh.nasmusictv.ui.screens.settings.NetworkMusicDialogActions
@@ -416,7 +417,7 @@ var activeSection by remember { mutableStateOf(SettingsSection.GENERAL) }
         if (msg != null) {
             // 屏幕级落点：分区内那一行在列表顶部，SAF 返回时列表还在惯性滚动、
             // `animateScrollToItem` 会被取消并被 runCatching 吞掉 ⇒ 只靠那一行等于没提示。
-            Toast.makeText(toastContext, msg.text, Toast.LENGTH_LONG).show()
+            AppToast.show(toastContext, msg.text, Toast.LENGTH_LONG)
             if (!msg.isError) {
                 kotlinx.coroutines.delay(4000)
                 onConsumeBackupMessage?.invoke()
@@ -438,7 +439,7 @@ var activeSection by remember { mutableStateOf(SettingsSection.GENERAL) }
         val msg = playlistImportMessage
         if (msg != null) {
             // 同 backupMessage：结果必须有一处不随列表滚动的落点
-            Toast.makeText(toastContext, msg.text, Toast.LENGTH_LONG).show()
+            AppToast.show(toastContext, msg.text, Toast.LENGTH_LONG)
             kotlinx.coroutines.delay(4000)
             onConsumePlaylistImportMessage?.invoke()
         }
