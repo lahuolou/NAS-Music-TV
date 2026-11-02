@@ -12,6 +12,7 @@ import com.lnh.nasmusictv.data.model.Song
 import com.lnh.nasmusictv.data.model.SongTechnicalInfo
 import com.lnh.nasmusictv.data.model.VersionInfo
 import com.lnh.nasmusictv.util.AppLog
+import com.lnh.nasmusictv.util.ConnectionErrorDiagnostics
 import com.lnh.nasmusictv.util.EncodingUtils
 import com.lnh.nasmusictv.util.RetryConfig
 import com.lnh.nasmusictv.util.UrlSanitizer
@@ -53,6 +54,11 @@ class JellyfinAdapter : BackendAdapter {
     private var userId: String = ""
     override var serverName: String = "Jellyfin"
         private set
+
+    /** 最近一次连接失败的简短原因（透传给 UI，避免只显示泛化"连接失败"） */
+    @Volatile
+    private var _lastErrorDetail: String = ""
+    override val lastErrorDetail: String get() = _lastErrorDetail
 
     // ── S4：会话内 401 重认证所需状态 ──────────────────────────────────
     /**
@@ -110,16 +116,26 @@ class JellyfinAdapter : BackendAdapter {
         username: String,
         password: String
     ): Boolean = withContext(Dispatchers.IO) {
+        _lastErrorDetail = ""
         this@JellyfinAdapter.baseUrl = baseUrl.removeSuffix("/")
 
         // S4：留存凭据供会话内 401 重认证使用（不落日志，F-1 约定）
         this@JellyfinAdapter.username = username
         this@JellyfinAdapter.password = password
 
+        // 两者皆空：无凭据必然失败，提前给出明确原因
+        if (apiToken.isBlank() && username.isBlank()) {
+            _lastErrorDetail = "未填写凭据：请填写用户名 + 密码，或填入 API token"
+            return@withContext false
+        }
+
         // 优先使用已有 token
         if (apiToken.isNotBlank()) {
             this@JellyfinAdapter.apiToken = apiToken
             val userInfo = fetchCurrentUserInfo()
+            if (userInfo == null && _lastErrorDetail.isBlank()) {
+                _lastErrorDetail = "使用 API token 连接失败（token 无效、已过期或网络错误）"
+            }
             if (userInfo != null) {
                 userId = userInfo.first
                 serverName = userInfo.second
@@ -131,6 +147,9 @@ class JellyfinAdapter : BackendAdapter {
         // 否则使用用户名密码登录
         if (username.isNotBlank()) {
             val result = authenticateByName(username, password)
+            if (result == null && _lastErrorDetail.isBlank()) {
+                _lastErrorDetail = "使用用户名 / 密码连接失败（凭据错误或网络错误）"
+            }
             if (result != null) {
                 this@JellyfinAdapter.apiToken = result.first
                 userId = result.second
@@ -1324,10 +1343,18 @@ class JellyfinAdapter : BackendAdapter {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                val body = response.utf8Body() ?: return@use null
                 if (!response.isSuccessful) {
                     // F-1：错误响应 body 可能回显请求体（含密码），不落入日志
                     AppLog.w("JellyfinAdapter", "authenticateByName: HTTP ${response.code} for ${UrlSanitizer.sanitize(baseUrl)}/Users/AuthenticateByName")
+                    _lastErrorDetail = if (response.code == 401) {
+                        "用户名或密码错误（HTTP 401）"
+                    } else {
+                        "登录失败（HTTP ${response.code}）"
+                    }
+                    return@use null
+                }
+                val body = response.utf8Body() ?: run {
+                    _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
                     return@use null
                 }
                 val json = gson.fromJson(body, JsonObject::class.java)
@@ -1340,6 +1367,7 @@ class JellyfinAdapter : BackendAdapter {
             }
         } catch (e: Exception) {
             AppLog.e("JellyfinAdapter", "authenticateByName failed", e)
+            _lastErrorDetail = ConnectionErrorDiagnostics.diagnose(e)
             null
         }
     }
@@ -1351,8 +1379,18 @@ class JellyfinAdapter : BackendAdapter {
                 .header("X-Emby-Authorization", buildAuthHeader())
                 .build()
             client.newCall(request).execute().use { response ->
-                val body = response.utf8Body() ?: return@use null
-                if (!response.isSuccessful) return@use null
+                if (!response.isSuccessful) {
+                    _lastErrorDetail = if (response.code == 401) {
+                        "API token 无效或已过期（HTTP 401）"
+                    } else {
+                        "连接 Jellyfin 失败（HTTP ${response.code}）"
+                    }
+                    return@use null
+                }
+                val body = response.utf8Body() ?: run {
+                    _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
+                    return@use null
+                }
                 val json = gson.fromJson(body, JsonObject::class.java)
                 val uid = json.get("Id")?.asString ?: return@use null
                 val name = EncodingUtils.fixEncoding(json.get("Name")?.asString) ?: "Jellyfin"
@@ -1360,6 +1398,7 @@ class JellyfinAdapter : BackendAdapter {
             }
         } catch (e: Exception) {
             AppLog.e("JellyfinAdapter", "fetchCurrentUserInfo failed", e)
+            _lastErrorDetail = ConnectionErrorDiagnostics.diagnose(e)
             null
         }
     }
