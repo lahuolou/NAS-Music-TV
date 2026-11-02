@@ -1,5 +1,6 @@
 package com.lnh.nasmusictv.util
 
+import com.google.gson.JsonParseException
 import javax.net.ssl.SSLException
 import javax.net.ssl.SSLHandshakeException
 
@@ -27,6 +28,10 @@ object ConnectionErrorDiagnostics {
                 "连接超时：服务器无响应（网络不通或地址 / 端口错误）"
             is IllegalArgumentException ->
                 "地址格式错误：请带 http:// 或 https:// 前缀（例：http://192.168.1.100:8096）"
+            // 服务端返回的不是预期 JSON：最常见是地址指向了另一个后端
+            // （例如用 Jellyfin 去连 Subsonic/Navidrome 的端口），或地址末尾多/少了路径
+            is JsonParseException ->
+                "响应格式不匹配：服务器返回的不是该后端的 JSON（地址可能指向了别的服务，或后端类型选错了）"
             is java.io.IOException ->
                 if (msg.isNotBlank()) "网络错误：$msg" else "网络 I/O 错误"
             else ->
