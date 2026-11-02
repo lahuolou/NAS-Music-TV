@@ -6,7 +6,28 @@
 
 ---
 
-## [v1.0.0] — 当前版本（`versionName=1.0.0`，`versionCode=1`）
+## [v1.0.1] — 当前版本（`versionName=1.0.1`，`versionCode=2`）
+
+基于 v1.0.0 的 TV 端观感打磨与体验修复（代码等价，无功能新增）。
+
+### Added
+- 首页「精选推荐」hero 大图轮播：复用 `recentlyAddedAlbums` 与 `CoverImage`，600ms 交叉淡入自动切换，聚焦 / 减弱动效时暂停，含渐变遮罩与指示点
+
+### Changed
+- 亮色主题播放页沉浸感：背景借封面主色做极淡晕染；黑胶组件亮色分支加静态极淡辉光与中性灰底座阴影（不呼吸、不压暗）
+- 歌曲网格间距 8dp → 12dp（专辑 / 歌单网格本已 12–20dp，安全）
+
+### Fixed
+- 歌曲卡片聚焦放大溢出：卡片聚焦缩放 1.06 → 1.03，修复放大时溢出相邻格
+- 空 / 错状态图标升级：`ListStateIndicators` 的 ⚠ / 📭 emoji 换为 Material 矢量图标 + 柔和圆形底
+- 反馈出口收敛：新增统一 `AppToast`，收口散落 `Toast` 调用（SettingsScreen ×2、LinkUtils ×1），并同步更新 `BackupResultVisibilityGate` 门禁正则
+
+### Docs
+- README 新增「鸣谢与衍生说明」：声明本项目为 hxzhang2000 原创 NASMusicTV 的 TV 衍生分支，保留原版 GPL-3.0 协议与全部既有功能
+
+---
+
+## [v1.0.0]（`versionName=1.0.0`，`versionCode=1`）
 
 首个以最新开发线功能为基础的稳定版。
 
