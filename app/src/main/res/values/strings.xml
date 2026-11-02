@@ -1576,4 +1576,5 @@
     <string name="feiniu_err_token_expired">登录令牌已失效，请重新连接</string>
     <string name="feiniu_err_network">无法连接服务器（%1$s），请检查网络与地址</string>
     <string name="feiniu_err_no_token">登录成功但响应中没有 userToken</string>
+    <string name="home_hero_featured">精选推荐</string>
 </resources>

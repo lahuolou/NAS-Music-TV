@@ -740,7 +740,7 @@ private fun SongRowModeCard(
                 isFocused = state.hasFocus && tvDevice
                 scope.launch {
                     animScale.animateTo(
-                        if (isFocused) 1.06f else 1f,
+                        if (isFocused) 1.03f else 1f,
                         tween(200)
                     )
                 }

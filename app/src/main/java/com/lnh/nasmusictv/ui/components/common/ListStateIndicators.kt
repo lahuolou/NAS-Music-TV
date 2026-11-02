@@ -14,8 +14,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -26,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import com.lnh.nasmusictv.R
 import com.lnh.nasmusictv.ui.components.FocusableSurface
@@ -105,11 +111,19 @@ fun ErrorDisplay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "⚠",
-                color = NasMusicColors.Warning,
-                fontSize = FontSize.display()
-            )
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(NasMusicColors.SurfaceVariant, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Warning,
+                    contentDescription = null,
+                    tint = NasMusicColors.Warning,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
             Text(
                 text = resolvedMessage,
                 color = NasMusicColors.TextSecondary,
@@ -159,11 +173,19 @@ fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "📭",
-                color = NasMusicColors.TextSecondary,
-                fontSize = FontSize.display()
-            )
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(NasMusicColors.SurfaceVariant, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Inbox,
+                    contentDescription = null,
+                    tint = NasMusicColors.TextSecondary,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
             Text(
                 text = resolvedMessage,
                 color = NasMusicColors.TextSecondary,

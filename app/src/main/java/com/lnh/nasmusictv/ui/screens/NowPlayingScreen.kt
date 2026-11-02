@@ -583,13 +583,11 @@ fun NowPlayingScreen(
         // 沉浸模式：整屏纯黑（左半封面右缘渐黑 + 右半歌词区均落在黑底上，无缝衔接）
         Brush.verticalGradient(listOf(Color.Black, Color.Black))
     } else if (!darkTheme) {
-        // 亮色主题（A2）：保留原有亮色背景，一律不套用深色模糊/遮罩
-        Brush.verticalGradient(
-            listOf(
-                NasMusicColors.SurfaceVariant,
-                NasMusicColors.Background
-            )
-        )
+        // 亮色主题（A2 静态）：不套用深色模糊/遮罩，但借封面主色做一层极淡氛围晕染，
+        // 让亮色播放页也有"沉浸感"而不只是一块平涂；取不到封面色时回退到 SurfaceVariant。
+        val lightTint = coverPalette?.dominant?.copy(alpha = 0.14f)
+            ?: NasMusicColors.SurfaceVariant
+        Brush.verticalGradient(listOf(lightTint, NasMusicColors.Background))
     } else {
         // 暗色主题：底层兜底渐变（品牌暗红氛围 → 深净底）；
         // 真实封面模糊背景由下方 ImmersiveBackdrop 层叠加绘制，

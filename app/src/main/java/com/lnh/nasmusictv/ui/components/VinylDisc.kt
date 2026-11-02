@@ -120,7 +120,8 @@ fun VinylDisc(
         val glowAlpha = vinylGlowAlpha(
             animate = !reduceMotion && !paused && darkTheme
         )
-        // 亮色主题不绘制光晕层：白色/浅色底上一圈绛红光晕是"暗色特效"越界
+        // 亮色主题绘制**静态极淡**辉光（不呼吸、不压暗），避免亮色播放页过"平"；
+        // 暗色主题才用呼吸式品牌辉光（见下 if 分支）。两者互不重叠。
         if (darkTheme) {
             // ⚠️ 修复：**盘外光晕此前等于没有** —— 旧写法是 matchParentSize()，
             // 光晕层与盘面尺寸完全重合，被上面不透明的盘面整块盖住，一点都看不见。
@@ -155,6 +156,29 @@ fun VinylDisc(
                         shape = CircleShape
                     )
             )
+        } else {
+            // 亮色主题（A2 静态）：用封面取色（glowColor 已是 coverPalette.accent 或品牌色回退）
+            // 做一层极淡的环境辉光，不呼吸、不压暗，避免亮色播放页过"平"。
+            // alpha 上限 ~0.16，远低于暗色呼吸光晕，只是让盘面有"浮起"的氛围。
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        alpha = if (reduceMotion) 0.14f else 0.16f
+                        scaleX = PlayerVisualSpec.DISC_GLOW_SCALE
+                        scaleY = PlayerVisualSpec.DISC_GLOW_SCALE
+                    }
+                    .background(
+                        Brush.radialGradient(
+                            colorStops = arrayOf(
+                                0.78f to glowColor.copy(alpha = 0.08f),
+                                0.85f to glowColor.copy(alpha = 0.16f),
+                                1.0f to Color.Transparent
+                            )
+                        ),
+                        shape = CircleShape
+                    )
+            )
         }
         // 盘外底座 / 阴影：比盘面略大的一圈柔和暗环，营造"悬浮于底座之上"的体量感
         // （暗色主题专属：亮色底上一圈暗影会显脏，与光晕同理门控）
@@ -169,6 +193,26 @@ fun VinylDisc(
                             0.84f to Color.Transparent,
                             // 暗环正好落在盘缘外侧（disc 边缘 ≈ 0.93 * ringR）
                             0.93f to Color.Black.copy(alpha = PlayerVisualSpec.DISC_BASE_SHADOW_ALPHA),
+                            1.0f to Color.Transparent
+                        ),
+                        center = center,
+                        radius = ringR
+                    ),
+                    radius = ringR,
+                    center = center
+                )
+            }
+        } else {
+            // 亮色主题：中性灰（非黑）柔环底座阴影，营造"悬浮"体量感且不显脏
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val r = size.minDimension / 2f
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val ringR = r * PlayerVisualSpec.DISC_BASE_SHADOW_SCALE
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colorStops = arrayOf(
+                            0.84f to Color.Transparent,
+                            0.93f to Color.Black.copy(alpha = 0.10f),
                             1.0f to Color.Transparent
                         ),
                         center = center,

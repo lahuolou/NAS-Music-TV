@@ -56,8 +56,8 @@ fun UnifiedSongGrid(
         columns = songGridColumns(),
         state = listState,
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 头部内容（跨列）
         if (header != null) {
