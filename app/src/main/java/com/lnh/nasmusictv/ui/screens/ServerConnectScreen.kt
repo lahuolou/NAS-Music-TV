@@ -1009,12 +1009,14 @@ private fun TestConnectionButton(
     val animScale = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
 
-FocusableSurface(
+    FocusableSurface(
         onClick = {
             if (!isTesting) onClick()
         },
         modifier = Modifier
-            .width(100.dp)
+            // TV 端按钮字号 25sp，「连接测试」4 个汉字约需 100dp，加内边距后 100dp 会换行被裁切，
+            // 故放宽到 132dp 并让文本单行不换行
+            .width(132.dp)
             .height(56.dp)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
@@ -1040,7 +1042,11 @@ FocusableSurface(
             Text(
                 text = if (isTesting) stringResource(R.string.server_testing) else stringResource(R.string.server_connection_test),
                 color = LocalFocusableContentColor.current,
-                fontSize = FontSize.button()
+                fontSize = FontSize.button(),
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
         }
     }

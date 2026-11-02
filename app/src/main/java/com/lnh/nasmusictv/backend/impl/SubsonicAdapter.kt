@@ -111,7 +111,13 @@ class SubsonicAdapter : BackendAdapter {
                     _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
                     return@use false
                 }
-                val json = gson.fromJson(body, JsonObject::class.java)
+                val json = try {
+                    gson.fromJson(body, JsonObject::class.java)
+                } catch (e: Exception) {
+                    // 服务端返回的不是 JSON（典型：地址指向了 Jellyfin 等别的后端）
+                    _lastErrorDetail = "响应格式不匹配：服务器返回的不是 Subsonic 的 JSON（该地址可能指向了别的服务）"
+                    return@use false
+                }
                 val subsonic = json.getAsJsonObject("subsonic-response")
                 if (subsonic == null) {
                     _lastErrorDetail = "响应格式异常：未包含 subsonic-response（该地址可能不是 Subsonic 服务）"

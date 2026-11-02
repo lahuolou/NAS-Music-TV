@@ -1357,10 +1357,19 @@ class JellyfinAdapter : BackendAdapter {
                     _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
                     return@use null
                 }
-                val json = gson.fromJson(body, JsonObject::class.java)
-                val accessToken = json.get("AccessToken")?.asString ?: return@use null
-                val userObj = json.getAsJsonObject("User") ?: return@use null
-                val uid = userObj.get("Id")?.asString ?: return@use null
+                val json = parseJellyfinJson(body) ?: return@use null
+                val accessToken = json.get("AccessToken")?.asString ?: run {
+                    _lastErrorDetail = "响应中缺少 AccessToken：可能不是 Jellyfin 服务（检查后端类型与地址路径）"
+                    return@use null
+                }
+                val userObj = json.getAsJsonObject("User") ?: run {
+                    _lastErrorDetail = "响应中缺少 User 信息：可能不是 Jellyfin 服务（检查后端类型与地址路径）"
+                    return@use null
+                }
+                val uid = userObj.get("Id")?.asString ?: run {
+                    _lastErrorDetail = "响应中缺少用户 Id：可能不是 Jellyfin 服务（检查后端类型与地址路径）"
+                    return@use null
+                }
                 val serverInfo = json.getAsJsonObject("ServerInfo")
                 val sName = serverInfo?.get("ServerName")?.asString ?: "Jellyfin"
                 Triple(accessToken, uid, sName)
@@ -1391,14 +1400,34 @@ class JellyfinAdapter : BackendAdapter {
                     _lastErrorDetail = "服务器返回空响应（HTTP ${response.code}）"
                     return@use null
                 }
-                val json = gson.fromJson(body, JsonObject::class.java)
-                val uid = json.get("Id")?.asString ?: return@use null
+                val json = parseJellyfinJson(body) ?: return@use null
+                val uid = json.get("Id")?.asString ?: run {
+                    _lastErrorDetail = "响应中缺少用户 Id：可能不是 Jellyfin 服务（检查后端类型与地址路径）"
+                    return@use null
+                }
                 val name = EncodingUtils.fixEncoding(json.get("Name")?.asString) ?: "Jellyfin"
                 Pair(uid, name)
             }
         } catch (e: Exception) {
             AppLog.e("JellyfinAdapter", "fetchCurrentUserInfo failed", e)
             _lastErrorDetail = ConnectionErrorDiagnostics.diagnose(e)
+            null
+        }
+    }
+
+    /**
+     * 解析 Jellyfin JSON 响应。
+     *
+     * 服务端返回的不是 JSON 对象（典型：地址其实指向 Subsonic / Navidrome，
+     * 或地址末尾多了路径）时给出「响应格式不匹配」的可操作提示，而不是抛
+     * JsonSyntaxException 让用户看到无意义的 Gson 报错。
+     */
+    private fun parseJellyfinJson(body: String): JsonObject? {
+        return try {
+            gson.fromJson(body, JsonObject::class.java)
+        } catch (e: Exception) {
+            AppLog.w("JellyfinAdapter", "auth response is not a JSON object: ${e.javaClass.simpleName}")
+            _lastErrorDetail = "响应格式不匹配：服务器返回的不是 Jellyfin 的 JSON（地址可能指向了别的服务，或后端类型选错了）"
             null
         }
     }
