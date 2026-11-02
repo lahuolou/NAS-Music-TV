@@ -13,8 +13,9 @@ import java.io.IOException
  * 服务器配置扫码传输服务（2026-09-22 用户需求）。
  *
  * 场景：TV 端「服务器配置」页展示二维码 → 手机扫码打开表单 → 选择后端类型并
- * 填写 URL / 用户名 / 密码 → 提交到 TV → TV 端自动填充表单，由用户用遥控器
- * 确认后才发起连接（本服务只负责传输，不代替用户做连接决策）。
+ * 填写地址 / 用户名 / 密码（WebDAV 附音乐目录，SMB 附共享名 / 工作组）→ 提交到
+ * TV → TV 端自动填充表单，由用户用遥控器确认后才发起连接
+ * （本服务只负责传输，不代替用户做连接决策）。
  *
  * 模式与 [PlaylistUploadServer] / [LocalInputServer] 一致：
  * - 端口段约定 18085（18080~18084 已占用）
@@ -26,7 +27,10 @@ import java.io.IOException
  */
 class ServerConfigTransferServer(
     private val context: Context,
-    private val onConfigReceived: (backendType: String, baseUrl: String, username: String, password: String, displayName: String) -> Unit,
+    private val onConfigReceived: (
+        backendType: String, baseUrl: String, username: String, password: String, displayName: String,
+        rootPath: String, smbShare: String, smbDomain: String
+    ) -> Unit,
     private val port: Int = DEFAULT_PORT
 ) : NanoHTTPD(port) {
 
@@ -36,8 +40,10 @@ class ServerConfigTransferServer(
         /** 端口段约定：18080 LocalInput / 18081 Backup / 18082 Remote / 18083 Model / 18084 Playlist */
         const val DEFAULT_PORT = 18085
 
-        /** 与 ServerConfig.TYPE_* 同步（private 常量不可跨用，此处本地白名单） */
-        private val ALLOWED_TYPES = setOf("jellyfin", "navidrome", "subsonic", "daoliyu", "feiniu")
+        /** 与 ServerConfig.TYPE_* 同步（private 常量不可跨用，此处本地白名单）；WebDAV/SMB 亦支持扫码填入 */
+        private val ALLOWED_TYPES = setOf(
+            "jellyfin", "navidrome", "subsonic", "daoliyu", "feiniu", "webdav", "smb"
+        )
 
         private const val MAX_BODY_BYTES = 64L * 1024
     }
@@ -93,7 +99,9 @@ class ServerConfigTransferServer(
 
     /**
      * 接收手机端提交的服务器配置 JSON：
-     * {"backendType":"jellyfin","baseUrl":"http://...","username":"..","password":"..","displayName":".."}
+     * {"backendType":"jellyfin","baseUrl":"http://...","username":"..","password":"..","displayName":"..",
+     *  "rootPath":"/music","smbShare":"music","smbDomain":"WORKGROUP"}
+     * rootPath / smbShare / smbDomain 仅 WebDAV / SMB 使用，其余后端忽略。
      */
     private fun handleConfig(session: IHTTPSession): Response {
         return try {
@@ -121,12 +129,24 @@ class ServerConfigTransferServer(
                     val username = obj.get("username")?.asString?.trim() ?: ""
                     val password = obj.get("password")?.asString ?: ""
                     val displayName = obj.get("displayName")?.asString?.trim() ?: ""
+                    val rootPath = obj.get("rootPath")?.asString?.trim() ?: ""
+                    val smbShare = obj.get("smbShare")?.asString?.trim() ?: ""
+                    val smbDomain = obj.get("smbDomain")?.asString?.trim() ?: ""
                     if (backendType !in ALLOWED_TYPES) return json(false, context.getString(R.string.cfg_msg_web_ui_unsupported, backendType))
-                    if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+                    // 按后端类型校验地址格式（SMB 只填主机:端口，WebDAV/其余为 http(s)://）
+                    if (backendType == "smb") {
+                        if (baseUrl.startsWith("http://", true) || baseUrl.startsWith("https://", true)) {
+                            return json(false, context.getString(R.string.cfg_msg_web_ui_smb_scheme))
+                        }
+                        if (smbShare.isBlank()) return json(false, context.getString(R.string.cfg_web_js_smb_share_required))
+                        if (smbShare.contains('/') || smbShare.contains('\\')) {
+                            return json(false, context.getString(R.string.cfg_msg_web_ui_smb_share_slash))
+                        }
+                    } else if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
                         return json(false, context.getString(R.string.cfg_msg_web_ui_url_scheme))
                     }
                     AppLog.i(TAG, "config received: type=$backendType url=${UrlSanitizer.sanitize(baseUrl)}")
-                    onConfigReceived.invoke(backendType, baseUrl, username, password, displayName)
+                    onConfigReceived.invoke(backendType, baseUrl, username, password, displayName, rootPath, smbShare, smbDomain)
                     json(true, context.getString(R.string.cfg_msg_web_ui_sent))
                 }
             }
@@ -172,36 +192,66 @@ button:disabled{background:#555;color:#999}
 <h2>NAS Music TV</h2>
 <p class="sub">${context.getString(R.string.cfg_web_subtitle)}</p>
 <label>${context.getString(R.string.cfg_web_backend_type)}</label>
-<select id="backendType">
+<select id="backendType" onchange="onTypeChange()">
   <option value="jellyfin">Jellyfin</option>
   <option value="navidrome">Navidrome</option>
   <option value="subsonic">Subsonic</option>
   <option value="daoliyu">道理鱼音乐</option>
   <option value="feiniu">飞牛音乐</option>
+  <option value="webdav">WebDAV</option>
+  <option value="smb">SMB</option>
 </select>
-<label>${context.getString(R.string.cfg_web_url)}</label>
-<input type="url" id="baseUrl" placeholder="http://192.168.1.10:8096">
+<label id="baseUrlLabel">${context.getString(R.string.cfg_web_url)}</label>
+<input type="text" id="baseUrl" placeholder="http://192.168.100.1">
+<div id="rootPathRow" style="display:none">
+<label>${context.getString(R.string.cfg_web_root_path)}</label>
+<input type="text" id="rootPath" placeholder="${context.getString(R.string.cfg_web_root_path_placeholder)}">
+</div>
+<div id="smbShareRow" style="display:none">
+<label>${context.getString(R.string.cfg_web_smb_share)}</label>
+<input type="text" id="smbShare" autocomplete="off">
+</div>
+<div id="smbDomainRow" style="display:none">
+<label>${context.getString(R.string.cfg_web_smb_domain)}</label>
+<input type="text" id="smbDomain" autocomplete="off">
+</div>
 <label>${context.getString(R.string.cfg_web_username)}</label>
-<input type="text" id="username" autocomplete="off">
+<input type="text" id="username" placeholder="${context.getString(R.string.cfg_web_username_placeholder)}" autocomplete="off">
 <label>${context.getString(R.string.cfg_web_password)}</label>
-<input type="password" id="password" autocomplete="off">
+<input type="password" id="password" placeholder="${context.getString(R.string.cfg_web_password_placeholder)}" autocomplete="off">
 <label>${context.getString(R.string.cfg_web_display_name)}</label>
 <input type="text" id="displayName" placeholder="${context.getString(R.string.cfg_web_display_name_placeholder)}">
 <button id="submitBtn" onclick="submitConfig()">${context.getString(R.string.cfg_web_submit)}</button>
 <div class="status" id="status"></div>
 </div>
 <script>
+var LBL_URL_HTTP=${Gson().toJson(context.getString(R.string.cfg_web_url))};
+var LBL_URL_SMB=${Gson().toJson(context.getString(R.string.cfg_web_url_label_smb))};
+function onTypeChange(){
+  var t=document.getElementById('backendType').value;
+  var isFile=(t==='webdav'||t==='smb');
+  document.getElementById('rootPathRow').style.display=isFile?'block':'none';
+  document.getElementById('smbShareRow').style.display=(t==='smb')?'block':'none';
+  document.getElementById('smbDomainRow').style.display=(t==='smb')?'block':'none';
+  document.getElementById('baseUrlLabel').textContent=(t==='smb')?LBL_URL_SMB:LBL_URL_HTTP;
+  document.getElementById('baseUrl').placeholder=(t==='smb')?'smb://192.168.100.1':(t==='webdav'?'http://192.168.100.1':'http://192.168.100.1');
+}
 function submitConfig(){
   var btn=document.getElementById('submitBtn');
   var st=document.getElementById('status');
+  var t=document.getElementById('backendType').value;
   var payload={
-    backendType:document.getElementById('backendType').value,
+    backendType:t,
     baseUrl:document.getElementById('baseUrl').value.trim(),
     username:document.getElementById('username').value.trim(),
     password:document.getElementById('password').value,
-    displayName:document.getElementById('displayName').value.trim()
+    displayName:document.getElementById('displayName').value.trim(),
+    rootPath:document.getElementById('rootPath').value.trim(),
+    smbShare:document.getElementById('smbShare').value.trim(),
+    smbDomain:document.getElementById('smbDomain').value.trim()
   };
   if(!payload.baseUrl){show('${context.getString(R.string.cfg_web_js_url_required)}','err');return;}
+  if(t==='smb'&&!payload.smbShare){show('${context.getString(R.string.cfg_web_js_smb_share_required)}','err');return;}
   btn.disabled=true;
   show('${context.getString(R.string.cfg_web_js_sending)}','');
   fetch('/api/config',{method:'POST',body:JSON.stringify(payload)})
@@ -218,6 +268,7 @@ function show(msg,cls){
   el.textContent=msg;
   el.className='status'+(cls?' '+cls:'');
 }
+onTypeChange();
 </script>
 </body>
 </html>

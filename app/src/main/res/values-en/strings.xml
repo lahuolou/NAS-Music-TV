@@ -225,10 +225,8 @@
     <string name="server_press_ok_edit">Press OK to edit</string>
     <string name="server_testing">Testing…</string>
     <string name="server_connection_test">Connection Test</string>
-    <string name="server_username_hint">Username</string>
-    <string name="server_password_hint">Password (used to obtain access token)</string>
-    <string name="server_navidrome_username_hint">Navidrome username</string>
-    <string name="server_navidrome_password_hint">Navidrome password</string>
+    <string name="server_username_hint_generic">Account for this service</string>
+    <string name="server_password_hint_generic">Password for this service</string>
 
     <!-- Settings - Language -->
     <string name="settings_language_desc">Choose app interface language</string>
@@ -745,11 +743,6 @@
     <string name="server_connect_type_daoliyu">Daoliyu</string>
     <string name="server_connect_type_feiniu">Feiniu</string>
     <string name="server_connect_email">Email</string>
-    <string name="server_connect_hint_jellyfin">https://jellyfin.example.com or http://192.168.1.100:8096</string>
-    <string name="server_connect_hint_subsonic">http://192.168.1.100:9527 or https://music.example.com</string>
-    <string name="server_connect_hint_daoliyu">http://192.168.1.100:4000</string>
-    <string name="server_connect_hint_feiniu">http://192.168.1.100:5666</string>
-    <string name="server_connect_hint_default">https://jellyfin.example.com or http://192.168.1.100:8096</string>
     <string name="server_connect_success">✓ Connected: %s</string>
     <string name="server_connect_failed">✗ %s</string>
 
@@ -1569,5 +1562,4 @@
     <string name="feiniu_err_token_expired">Login token has expired. Please reconnect.</string>
     <string name="feiniu_err_network">Cannot reach the server (%1$s). Check the network and address.</string>
     <string name="feiniu_err_no_token">Login succeeded but the response contained no userToken</string>
-    <string name="home_hero_featured">Featured</string>
 </resources>

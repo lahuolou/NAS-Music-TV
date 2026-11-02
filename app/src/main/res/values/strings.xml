@@ -229,10 +229,8 @@
     <string name="server_press_ok_edit">按下确定键编辑</string>
     <string name="server_testing">测试中…</string>
     <string name="server_connection_test">连接测试</string>
-    <string name="server_username_hint">用户名</string>
-    <string name="server_password_hint">密码（用于获取访问令牌）</string>
-    <string name="server_navidrome_username_hint">Navidrome 用户名</string>
-    <string name="server_navidrome_password_hint">Navidrome 密码</string>
+    <string name="server_username_hint_generic">该服务对应的账号</string>
+    <string name="server_password_hint_generic">该服务对应的密码</string>
 
     <!-- Settings - Language -->
     <string name="settings_language_desc">选择应用界面语言</string>
@@ -788,11 +786,6 @@
     <string name="server_connect_type_daoliyu">道理鱼</string>
     <string name="server_connect_type_feiniu">飞牛</string>
     <string name="server_connect_email">邮箱</string>
-    <string name="server_connect_hint_jellyfin">https://jellyfin.example.com 或 http://192.168.1.100:8096</string>
-    <string name="server_connect_hint_subsonic">http://192.168.1.100:9527 或 https://music.example.com</string>
-    <string name="server_connect_hint_daoliyu">http://192.168.1.100:4000</string>
-    <string name="server_connect_hint_feiniu">http://192.168.1.100:5666</string>
-    <string name="server_connect_hint_default">https://jellyfin.example.com 或 http://192.168.1.100:8096</string>
     <string name="server_connect_success">✓ 连接成功：%s</string>
     <string name="server_connect_failed">✗ %s</string>
 
@@ -1458,6 +1451,16 @@
     <string name="cfg_web_js_sending">发送中…</string>
     <string name="cfg_web_js_done">完成</string>
     <string name="cfg_web_js_send_failed">发送失败: </string>
+    <string name="cfg_web_username_placeholder">该服务对应的账号</string>
+    <string name="cfg_web_password_placeholder">该服务对应的密码</string>
+    <string name="cfg_web_root_path">音乐目录（相对根路径，可选）</string>
+    <string name="cfg_web_root_path_placeholder">例如：/music</string>
+    <string name="cfg_web_smb_share">SMB 共享名称</string>
+    <string name="cfg_web_smb_domain">SMB 工作组/域名（可选）</string>
+    <string name="cfg_web_url_label_smb">服务器地址（主机[:端口]，如 smb://192.168.1.10:445）</string>
+    <string name="cfg_web_js_smb_share_required">请填写 SMB 共享名称</string>
+    <string name="cfg_msg_web_ui_smb_scheme">SMB 地址请填写主机和端口（如 smb://192.168.1.10:445），共享名称请单独填写</string>
+    <string name="cfg_msg_web_ui_smb_share_slash">SMB 共享名称不能包含斜杠</string>
     <string name="model_msg_boundary_missing">缺少 multipart boundary，content-type=%1$s</string>
     <string name="model_msg_file_too_small">文件太小（%1$dMB，预期约166MB），请确认上传的是 htdemucs_ft_vocals_fp16weights.onnx</string>
     <string name="model_msg_sha_mismatch">文件校验失败（SHA-256 不匹配）：期望 %1$s…，实际 %2$s…。请确认上传的是官方 htdemucs_ft_vocals_fp16weights.onnx（约 158MB）</string>
@@ -1576,5 +1579,4 @@
     <string name="feiniu_err_token_expired">登录令牌已失效，请重新连接</string>
     <string name="feiniu_err_network">无法连接服务器（%1$s），请检查网络与地址</string>
     <string name="feiniu_err_no_token">登录成功但响应中没有 userToken</string>
-    <string name="home_hero_featured">精选推荐</string>
 </resources>

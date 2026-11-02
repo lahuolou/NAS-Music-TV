@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -161,16 +162,28 @@ val context = LocalContext.current
     var qrUrl by remember { mutableStateOf<String?>(null) }
     var qrBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     val configTransferServer = remember {
-        ServerConfigTransferServer(context, onConfigReceived = { backend: String, url: String, user: String, pass: String, name: String ->
-            // NanoHTTPD 工作线程回调 → 主线程更新表单状态
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                baseUrl = TextFieldValue(url)
-                username = TextFieldValue(user)
-                password = TextFieldValue(pass)
-                backendType = backend
-                statusMessage = context.getString(R.string.server_config_received_hint)
+        ServerConfigTransferServer(
+            context,
+            onConfigReceived = { backend: String, url: String, user: String, pass: String, name: String,
+                                 root: String, share: String, domain: String ->
+                // NanoHTTPD 工作线程回调 → 主线程更新表单状态
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    baseUrl = TextFieldValue(url)
+                    username = TextFieldValue(user)
+                    password = TextFieldValue(pass)
+                    backendType = backend
+                    // WebDAV / SMB 附带目录与共享名字段（其余后端提交为空串，不覆盖已填内容）
+                    if (backend == ServerConfig.TYPE_WEBDAV || backend == ServerConfig.TYPE_SMB) {
+                        rootPath = TextFieldValue(root.ifBlank { "/" })
+                    }
+                    if (backend == ServerConfig.TYPE_SMB) {
+                        smbShare = TextFieldValue(share)
+                        smbDomain = TextFieldValue(domain)
+                    }
+                    statusMessage = context.getString(R.string.server_config_received_hint)
+                }
             }
-        })
+        )
     }
     DisposableEffect(Unit) {
         val ip = NetworkUtils.getLocalIpAddress()
@@ -406,12 +419,6 @@ val context = LocalContext.current
                     onClick = { backendType = ServerConfig.TYPE_DAOLIYU },
                     modifier = Modifier.weight(1f)
                 )
-                TypeCard(
-                    text = stringResource(R.string.server_connect_type_feiniu),
-                    selected = backendType == ServerConfig.TYPE_FEINIU,
-                    onClick = { backendType = ServerConfig.TYPE_FEINIU },
-                    modifier = Modifier.weight(1f)
-                )
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -419,18 +426,24 @@ val context = LocalContext.current
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 TypeCard(
+                    text = stringResource(R.string.server_connect_type_feiniu),
+                    selected = backendType == ServerConfig.TYPE_FEINIU,
+                    onClick = { backendType = ServerConfig.TYPE_FEINIU },
+                    modifier = Modifier.weight(1f)
+                )
+                TypeCard(
                     text = "WebDAV",
                     selected = backendType == ServerConfig.TYPE_WEBDAV,
                     onClick = { backendType = ServerConfig.TYPE_WEBDAV; testStatus = "" },
                     modifier = Modifier.weight(1f)
                 )
                 TypeCard(
-                    text = "SMB / Windows 共享",
+                    text = "SMB",
                     selected = backendType == ServerConfig.TYPE_SMB,
                     onClick = { backendType = ServerConfig.TYPE_SMB; testStatus = "" },
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.weight(3f))
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -474,58 +487,76 @@ val context = LocalContext.current
             Spacer(modifier = Modifier.height(16.dp))
 
             if (backendType == ServerConfig.TYPE_JELLYFIN) {
-                FormField(
-                    label = stringResource(R.string.server_username),
-                    hint = stringResource(R.string.server_username_hint),
-                    value = username,
-                    onValueChange = { username = it },
-                    onOpen = { activeInputField = InputField.USERNAME }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FormField(
-                    label = stringResource(R.string.server_password),
-                    hint = stringResource(R.string.server_password_hint),
-                    value = password,
-                    onValueChange = { password = it },
-                    masked = true,
-                    onOpen = { activeInputField = InputField.PASSWORD }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FormField(
+                        label = stringResource(R.string.server_username),
+                        hint = stringResource(R.string.server_username_hint_generic),
+                        value = username,
+                        onValueChange = { username = it },
+                        onOpen = { activeInputField = InputField.USERNAME },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormField(
+                        label = stringResource(R.string.server_password),
+                        hint = stringResource(R.string.server_password_hint_generic),
+                        value = password,
+                        onValueChange = { password = it },
+                        masked = true,
+                        onOpen = { activeInputField = InputField.PASSWORD },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             } else if (backendType == ServerConfig.TYPE_DAOLIYU) {
                 // 道理鱼：邮箱 + 密码
-                FormField(
-                    label = stringResource(R.string.server_connect_email),
-                    hint = "user@example.com",
-                    value = username,
-                    onValueChange = { username = it },
-                    onOpen = { activeInputField = InputField.USERNAME }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FormField(
-                    label = stringResource(R.string.server_password),
-                    hint = stringResource(R.string.server_password_hint),
-                    value = password,
-                    onValueChange = { password = it },
-                    masked = true,
-                    onOpen = { activeInputField = InputField.PASSWORD }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FormField(
+                        label = stringResource(R.string.server_connect_email),
+                        hint = "user@example.com",
+                        value = username,
+                        onValueChange = { username = it },
+                        onOpen = { activeInputField = InputField.USERNAME },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormField(
+                        label = stringResource(R.string.server_password),
+                        hint = stringResource(R.string.server_password_hint_generic),
+                        value = password,
+                        onValueChange = { password = it },
+                        masked = true,
+                        onOpen = { activeInputField = InputField.PASSWORD },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             } else {
-                // Navidrome / Subsonic / 飞牛：用户名 + 密码
-                FormField(
-                    label = stringResource(R.string.server_username),
-                    hint = stringResource(R.string.server_navidrome_username_hint),
-                    value = username,
-                    onValueChange = { username = it },
-                    onOpen = { activeInputField = InputField.USERNAME }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FormField(
-                    label = stringResource(R.string.server_password),
-                    hint = stringResource(R.string.server_navidrome_password_hint),
-                    value = password,
-                    onValueChange = { password = it },
-                    masked = true,
-                    onOpen = { activeInputField = InputField.PASSWORD }
-                )
+                // Navidrome / Subsonic / 飞牛 / WebDAV / SMB：用户名 + 密码
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FormField(
+                        label = stringResource(R.string.server_username),
+                        hint = stringResource(R.string.server_username_hint_generic),
+                        value = username,
+                        onValueChange = { username = it },
+                        onOpen = { activeInputField = InputField.USERNAME },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormField(
+                        label = stringResource(R.string.server_password),
+                        hint = stringResource(R.string.server_password_hint_generic),
+                        value = password,
+                        onValueChange = { password = it },
+                        masked = true,
+                        onOpen = { activeInputField = InputField.PASSWORD },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 // 访问码仅飞牛音乐需要：其余后端没有这个概念，显示出来只会误导
                 if (backendType == ServerConfig.TYPE_FEINIU) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -542,21 +573,27 @@ val context = LocalContext.current
 
             if (backendType == ServerConfig.TYPE_SMB) {
                 Spacer(modifier = Modifier.height(16.dp))
-                FormField(
-                    label = "SMB 共享名称",
-                    hint = "例如：music、share",
-                    value = smbShare,
-                    onValueChange = { smbShare = it },
-                    onOpen = { activeInputField = InputField.SMB_SHARE }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FormField(
-                    label = "工作组 / 域（可选）",
-                    hint = "例如：WORKGROUP",
-                    value = smbDomain,
-                    onValueChange = { smbDomain = it },
-                    onOpen = { activeInputField = InputField.SMB_DOMAIN }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FormField(
+                        label = "SMB 共享名称",
+                        hint = "例如：music、share",
+                        value = smbShare,
+                        onValueChange = { smbShare = it },
+                        onOpen = { activeInputField = InputField.SMB_SHARE },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormField(
+                        label = "工作组 / 域（可选）",
+                        hint = "例如：WORKGROUP",
+                        value = smbDomain,
+                        onValueChange = { smbDomain = it },
+                        onOpen = { activeInputField = InputField.SMB_DOMAIN },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             if (backendType == ServerConfig.TYPE_WEBDAV || backendType == ServerConfig.TYPE_SMB) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -586,6 +623,14 @@ val context = LocalContext.current
                     )
                 }
             }
+
+            // 表单统一操作提示（原每字段一行，排版冗余）
+            Text(
+                text = stringResource(R.string.server_press_ok_edit),
+                color = NasMusicColors.TextSecondary,
+                fontSize = FontSize.body(),
+                modifier = Modifier.padding(top = 12.dp)
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -657,9 +702,8 @@ val context = LocalContext.current
                 InputField.BASE_URL -> {
                     dialogTitle = stringResource(R.string.server_address_dialog_title)
                     dialogHint = when (backendType) {
-                        ServerConfig.TYPE_WEBDAV -> "例如：http://192.168.1.10:5005/dav 或 https://nas.example.com/dav"
-                        ServerConfig.TYPE_SMB -> "例如：smb://192.168.1.10:445 或 192.168.1.10"
-                        else -> stringResource(R.string.server_connect_hint_jellyfin)
+                        ServerConfig.TYPE_SMB -> "smb://192.168.100.1"
+                        else -> "http://192.168.100.1"
                     }
                     dialogValue = baseUrl.text
                     dialogMasked = false
@@ -894,9 +938,11 @@ private fun TypeCard(
             color = LocalFocusableContentColor.current,
             fontSize = FontSize.subtitle(),
             textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .padding(horizontal = 6.dp, vertical = 16.dp)
         )
     }
 }
@@ -909,9 +955,10 @@ private fun FormField(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     onOpen: () -> Unit = {},
-    masked: Boolean = false
+    masked: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier) {
         Text(
             text = label,
             color = NasMusicColors.TextPrimary,
@@ -943,17 +990,12 @@ private fun FormField(
                            else value.text,
                     color = LocalFocusableContentColor.current,
                     fontSize = FontSize.button(),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
-
-        Text(
-            text = stringResource(R.string.server_press_ok_edit),
-            color = NasMusicColors.TextSecondary,
-            fontSize = FontSize.body(),
-            modifier = Modifier.padding(top = 6.dp, start = 4.dp)
-        )
     }
 }
 
@@ -1049,16 +1091,13 @@ private fun ServerAddressField(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = if (baseUrl.text.isEmpty()) when (backendType) {
-                            ServerConfig.TYPE_SUBSONIC -> stringResource(R.string.server_connect_hint_subsonic)
-                            ServerConfig.TYPE_DAOLIYU -> stringResource(R.string.server_connect_hint_daoliyu)
-                            ServerConfig.TYPE_FEINIU -> stringResource(R.string.server_connect_hint_feiniu)
-                            ServerConfig.TYPE_WEBDAV -> "http://192.168.1.10:5005/dav"
-                            ServerConfig.TYPE_SMB -> "smb://192.168.1.10:445"
-                            else -> stringResource(R.string.server_connect_hint_default)
+                        text = if (baseUrl.text.isEmpty()) {
+                            if (backendType == ServerConfig.TYPE_SMB) "smb://192.168.100.1" else "http://192.168.100.1"
                         } else baseUrl.text,
                         color = LocalFocusableContentColor.current,
                         fontSize = FontSize.button(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
