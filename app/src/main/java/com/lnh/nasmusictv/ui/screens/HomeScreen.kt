@@ -59,18 +59,11 @@ import com.lnh.nasmusictv.ui.components.MarqueeText
 import com.lnh.nasmusictv.ui.components.common.SectionHeader
 import com.lnh.nasmusictv.ui.components.LocalFocusableContentColor
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
-import com.lnh.nasmusictv.ui.theme.LocalReduceMotion
-import com.lnh.nasmusictv.ui.components.common.CoverImage
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.graphics.Brush
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 /**
@@ -146,17 +139,6 @@ fun HomeScreen(
             .padding(horizontal = 32.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 0. 精选推荐 hero（自动轮播；聚焦或减弱动效时暂停，避免与 D-Pad 导航冲突）
-        val heroAlbums = dashboardData.recentlyAddedAlbums.take(6)
-        if (heroAlbums.isNotEmpty()) {
-            item(key = "hero") {
-                HomeHero(
-                    albums = heroAlbums,
-                    onOpenAlbumDetail = onOpenAlbumDetail
-                )
-            }
-        }
-
         // 1. 欢迎 + 统计卡片
         item(key = "welcome") {
             WelcomeSection(
@@ -791,122 +773,6 @@ private fun HomeWeatherCard(
                     color = LocalFocusableContentColor.current,
                     fontSize = FontSize.button()
                 )
-            }
-        }
-    }
-}
-
-/**
- * 首页「精选推荐」hero：大图轮播 + 标题/艺人叠加 + 指示点。
- *
- * - 数据来自 [HomeDashboardData.recentlyAddedAlbums]（与下方「最近添加」分区同源，保持一致）。
- * - 每 7 秒自动切换一张；**聚焦时暂停**（避免与 D-Pad 导航抢焦点，真机体验更稳），
- *   [LocalReduceMotion] 开启时完全关闭自动轮播（仅静态显示当前张）。
- * - 整块是 [FocusableSurface]：聚焦放大 + 焦点环，OK 键打开当前专辑详情。
- * - 切换用 [Crossfade] 做 600ms 淡入淡出，封面复用 [CoverImage]（含音符占位 + 骨架）。
- */
-@Composable
-private fun HomeHero(
-    albums: List<Album>,
-    onOpenAlbumDetail: (Album) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var index by remember { mutableIntStateOf(0) }
-    var isFocused by remember { mutableStateOf(false) }
-    val reduceMotion = LocalReduceMotion.current
-    // 用 ref 读最新焦点态：LaunchedEffect 的 while 循环捕获的是初始值，需经 rememberUpdatedState 透传
-    val focusedRef by rememberUpdatedState(isFocused)
-    val album = albums[index]
-
-    LaunchedEffect(albums, reduceMotion) {
-        if (reduceMotion) return@LaunchedEffect
-        while (true) {
-            delay(7000L)
-            if (!focusedRef) index = (index + 1) % albums.size
-        }
-    }
-
-    FocusableSurface(
-        onClick = { onOpenAlbumDetail(album) },
-        onFocusChanged = { isFocused = it },
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(260.dp)
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            Crossfade(
-                targetState = index,
-                animationSpec = tween(600),
-                modifier = Modifier.fillMaxSize()
-            ) { idx ->
-                CoverImage(coverUrl = albums[idx].coverUrl, modifier = Modifier.fillMaxSize())
-            }
-
-            // 底部渐变遮罩：保证叠加文字在任意封面上可读（亮/暗主题统一用背景色收尾）
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0.42f to Color.Transparent,
-                            1f to NasMusicColors.Background.copy(alpha = 0.92f)
-                        )
-                    )
-            )
-
-            // 文案：标签 + 专辑名 + 艺人
-            Column(
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 24.dp, end = 24.dp, bottom = 22.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.home_hero_featured),
-                    fontSize = FontSize.small(),
-                    fontWeight = FontWeight.Bold,
-                    color = NasMusicColors.Primary
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = album.name,
-                    fontSize = FontSize.display(),
-                    fontWeight = FontWeight.Bold,
-                    color = NasMusicColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (album.artist.isNotBlank()) {
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = album.artist,
-                        fontSize = FontSize.body(),
-                        color = NasMusicColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // 指示点（当前张高亮加宽）
-            Row(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 24.dp, bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                albums.forEachIndexed { i, _ ->
-                    val active = i == index
-                    Box(
-                        Modifier
-                            .size(if (active) 10.dp else 7.dp)
-                            .background(
-                                if (active) NasMusicColors.Primary
-                                else NasMusicColors.TextSecondary.copy(alpha = 0.5f),
-                                CircleShape
-                            )
-                    )
-                }
             }
         }
     }
