@@ -25,9 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -504,9 +509,19 @@ internal fun AboutRow(label: String, value: String) {
     // 修复（2026-09-22 用户反馈）：原「标签 + weight Spacer + 值」结构在值过长时
     // Spacer 塌缩、值紧跟标签（视觉上忽左忽右）。改为固定双栏：标签占左（超长换行），
     // 值恒右对齐（超长换行也按右缘对齐）。手机 / TV 一致。
+    // TV 修复（2026-11-04）：加 focusable + 焦点背景色，让遥控器上下键能在每行之间移动，
+    // 否则纯文本行没有焦点目标，LazyColumn 无法向上滚动。
+    val focusState = remember { mutableStateOf(false) }
     Box(
         modifier = Modifier.fillMaxWidth()
             .padding(horizontal = SettingsTokens.rowHPadding, vertical = SettingsTokens.rowVPadding)
+            .focusable()
+            .onFocusChanged { focusState.value = it.isFocused }
+            .background(
+                if (focusState.value) NasMusicColors.Primary.copy(alpha = 0.12f)
+                else androidx.compose.ui.graphics.Color.Transparent,
+                RoundedCornerShape(6.dp)
+            )
     ) {
         SettingsLabelValueRow(
             label = label,

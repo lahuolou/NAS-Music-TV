@@ -32,7 +32,7 @@ data class CloudDriveConfig(
          * 默认音乐根目录（百度应用沙箱目录，与 `BaiduNetdiskConfig.APP_DIR` 保持同值）。
          * ⚠️ 两侧为独立常量：门禁 `CloudDriveDefaultsTest` 断言二者一致，修改任一侧必须同步。
          */
-        const val DEFAULT_MUSIC_ROOT = "/apps/NAS-Music-TV"
+        const val DEFAULT_MUSIC_ROOT = "/apps/music"
     }
 
     /** 实际指纹与本地基线不一致 → API 可能已升级 */

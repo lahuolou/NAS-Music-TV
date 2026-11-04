@@ -158,27 +158,27 @@ private fun buildInputPageHtml(context: Context): String {
 <title>NAS Music TV</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#1a1a2e;color:#eee;display:flex;flex-direc
-.card{background:#16213e;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
-h2{text-align:center;margin-bottom:8px;font-size:22px}
-.sub{text-align:center;color:#888;font-size:13px;margin-bottom:24px}
-input{width:100%;padding:16px;font-size:18px;border:2px solid #0f3460;border-radius:10px;background:#0a0a23;color:#eee;outline:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#1a1a2e;color:#eee;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{background:#16213e;border-radius:16px;padding:80px 28px 50px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.logo{text-align:center;font-size:38px;margin-bottom:14px;line-height:1}
+h2{text-align:center;margin-bottom:16px;font-size:22px}
+input{width:100%;padding:18px;font-size:18px;border:2px solid #0f3460;border-radius:10px;background:#0a0a23;color:#eee;outline:none}
 input:focus{border-color:#e94560}
-button{width:100%;padding:16px;font-size:18px;background:#e94560;color:#fff;border:none;border-radius:10px;margin-top:14px;font-weig
+button{width:100%;padding:18px;font-size:18px;background:#e94560;color:#fff;border:none;border-radius:10px;margin-top:24px;font-weight:600}
 button:active{transform:scale(.98);background:#c73e54}
-.status{text-align:center;margin-top:14px;font-size:15px;color:#4ecca3;min-height:22px}
-.hint{text-align:center;color:#666;font-size:12px;margin-top:20px;line-height:1.6}
+.status{text-align:center;margin-top:20px;font-size:15px;color:#4ecca3;min-height:22px}
+.desc{text-align:center;color:#8892b0;font-size:13px;line-height:1.7;margin:0 0 32px 0}
 </style>
 </head>
 <body>
 <div class="card">
+<div class="logo">🎵</div>
 <h2>NAS Music TV</h2>
-<p class="sub">${context.getString(R.string.local_input_subtitle)}</p>
-<input type="text" id="t" placeholder="${context.getString(R.string.local_input_placeholder)}" autofocus>
+<div class="desc">${context.getString(R.string.local_input_hint)}</div>
+<input type="text" id="t" autofocus>
 <button onclick="send()">${context.getString(R.string.local_input_submit)}</button>
 <div class="status" id="s"></div>
 </div>
-<p class="hint">${context.getString(R.string.local_input_hint)}</p>
 <script>
 function send(){
   var t=document.getElementById('t').value;

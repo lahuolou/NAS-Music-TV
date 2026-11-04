@@ -2,7 +2,8 @@
 
 > 安卓 **TV 端**音乐播放器（包名 `com.lnh.nasmusictv`）。用遥控器在大屏电视上听 NAS / 网盘 / 流媒体音乐，支持本地曲库、MV、K 歌、音乐可视化，并可用手机或电脑浏览器**扫码反向遥控**。
 
-- **形态**：仅 Android TV，强制横屏（`sensorLandscape`，已无竖屏/手机客户端代码）；`minSdk=22`（Android 5.1）/ `targetSdk=34` / `compileSdk=34`
+- **形态**：仅 Android TV，强制横屏（`sensorLandscape`，已无竖屏/手机客户端代码）；`minSdk=21`（Android 5.0+）/ `targetSdk=34` / `compileSdk=34`
+- **当前版本**：1.0.3（versionCode 6）
 - **技术栈**：100% **Jetpack Compose for TV**（非 Leanback Presenter）；播放基于 **AndroidX Media3 / ExoPlayer**
 - **手机不是客户端，而是遥控器**：App 在部分模式下启动内嵌 HTTP 服务并展示二维码，手机/电脑浏览器扫码即可控制
 

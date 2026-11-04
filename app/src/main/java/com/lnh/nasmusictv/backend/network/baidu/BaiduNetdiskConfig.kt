@@ -32,7 +32,7 @@ object BaiduNetdiskConfig {
      * 自 2026-08-31 起，应用仅可访问 /apps/{应用名称} 目录。
      * 验证 token 和默认音乐根目录都应在此目录下。
      */
-    const val APP_DIR = "/apps/NAS-Music-TV"
+    const val APP_DIR = "/apps/music"
 
     // ---- 文件接口 base（列表/搜索与元数据的端点不同，勿混用）----
     /** 列表 / 搜索 */
