@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  〔自动更新 · 2026-11-03〕FileProvider 路径白名单。
+  仅暴露应用私有缓存下的 updates/ 目录，供系统安装器读取更新 APK。
+  对应 UpdateManager 写入路径：cacheDir/updates/nasmusic-update.apk。
+  name 仅为 content URI 中的别名（随机构成，无关安全）。
+-->
+<paths>
+    <cache-path name="update_apks" path="updates/" />
+</paths>

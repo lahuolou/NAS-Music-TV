@@ -19,6 +19,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!--
+      〔自动更新 · 2026-11-03〕应用内下载 GitHub Release 的 APK 后，调起系统安装器
+      （ACTION_INSTALL_PACKAGE）完成安装。该动作需要 INSTALL_PACKAGES 权限——
+      普通（非系统 / 非 root）应用只能声明 REQUEST_INSTALL_PACKAGES 让系统弹确认，
+      无法静默安装（TV 同上，受平台限制）。详见 data/update/UpdateManager.kt。
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!--
       运行时通知权限已删除（2026-10-06 权限瘦身）：
       全仓唯一的通知是媒体通知（PlaybackService 的 MediaStyle 模板），平台对
       MediaSession 通知强制豁免该权限（AOSP NotificationManagerService 按
@@ -157,6 +164,22 @@
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
             </intent-filter>
         </service>
+
+        <!--
+          〔自动更新 · 2026-11-03〕FileProvider：把应用私有缓存里的更新 APK
+          （cacheDir/updates/nasmusic-update.apk）以 content:// URI 暴露给系统安装器。
+          必须用 FileProvider 而非 file://（Android 7+ 的 StrictMode 会拒绝 file://）。
+          authorities 与 UpdateManager.FILE_PROVIDER_AUTH 严格一致。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.lnh.nasmusictv.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
 
     </application>
 

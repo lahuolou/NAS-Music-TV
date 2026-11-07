@@ -399,6 +399,30 @@
     <string name="settings_group_connection_info">连接信息</string>
     <string name="settings_group_capabilities">能力说明</string>
     <string name="settings_group_opensource">开源与许可</string>
+    <!-- 关于分区新增「应用更新」卡（2026-11-03 自动更新功能） -->
+    <string name="settings_group_update">应用更新</string>
+    <string name="settings_update_desc">从 GitHub 获取最新版本并安装（安装需手动确认系统安装器）</string>
+    <string name="about_update_current">当前版本</string>
+    <string name="about_update_auto_check">自动检查更新</string>
+    <string name="about_update_auto_check_desc">在后台定期检查新版本（每天最多一次）</string>
+    <string name="about_update_check_now">检查更新</string>
+    <string name="about_update_check_now_desc">立即向 GitHub 查询是否有新版本</string>
+    <string name="about_update_checking">正在检查新版本…</string>
+    <string name="about_update_status">状态</string>
+    <string name="about_update_up_to_date">已是最新版本</string>
+    <string name="about_update_latest">最新版本</string>
+    <string name="about_update_size">大小</string>
+    <string name="about_update_available_desc">发现新版本 %s，可下载并安装</string>
+    <string name="about_update_download_install">下载并安装</string>
+    <string name="about_update_download_install_desc">下载 APK 后调起系统安装器</string>
+    <string name="about_update_skip">跳过此版本</string>
+    <string name="about_update_skip_desc">不再提示该版本</string>
+    <string name="about_update_view_notes">查看发布说明</string>
+    <string name="about_update_view_notes_desc">在浏览器打开 GitHub Release 页面</string>
+    <string name="about_update_downloading">正在下载… %1$d / %2$d MB</string>
+    <string name="about_update_error">更新出错：%s</string>
+    <string name="about_update_retry">重试</string>
+    <string name="about_update_retry_desc">重新检查最新版本</string>
     <string name="settings_dark_theme">暗色主题</string>
     <string name="settings_dark_theme_desc">使用深色背景保护视力</string>
     <string name="settings_animations">界面动画</string>
@@ -415,6 +439,10 @@
     <string name="settings_clear_lyrics_cache">清除歌词缓存</string>
     <string name="settings_clear_lyrics_cache_desc">删除所有已缓存的歌词文件</string>
     <string name="settings_clear_cover_cache">清除封面缓存（Coil）</string>
+    <!-- 一键清理全部缓存（卡③顶部红色大按钮；不含数据库/已下载歌曲/模型等只读项） -->
+    <string name="settings_clear_all">一键清理全部缓存</string>
+    <string name="settings_clear_all_desc">依次清除歌词/封面/解包封面/分离产物/MV 等全部可再生成缓存（不删数据库与已下载歌曲）</string>
+    <string name="status_all_caches_cleared">全部缓存已清理</string>
     <!-- 缓存分区三卡标题（T8 建两卡，T8b 拆出「占用与存储」） -->
     <string name="settings_group_cache_policy">缓存策略</string>
     <string name="settings_group_cache_occupancy">占用与存储</string>
@@ -439,6 +467,7 @@
     <string name="settings_cache_dir_cover_url">封面地址表</string>
     <string name="settings_cache_dir_cover_url_desc">清后需重新联网解析</string>
     <string name="settings_cache_dir_lyrics_http">歌词网络缓存</string>
+    <string name="settings_cache_dir_update_apk">更新安装包（临时）</string>
     <string name="settings_cache_dir_local_lrc">本机歌词文件</string>
     <string name="settings_cache_dir_local_lrc_ext">外部歌词文件</string>
     <string name="settings_cache_dir_local_lrc_desc">用户自行放入的 LRC，不删除</string>
@@ -1482,7 +1511,6 @@
     <string name="backup_msg_restore_ok">恢复成功</string>
     <string name="backup_msg_restore_format">恢复失败，数据格式可能不兼容</string>
     <string name="backup_msg_restore_failed">恢复失败: %1$s</string>
-    <string name="local_input_subtitle">扫码输入 - 文字将显示在电视输入框</string>
     <string name="local_input_placeholder">输入歌曲/歌手名…</string>
     <string name="local_input_submit">发送到电视</string>
     <string name="local_input_hint">可连续输入多次，每次点发送后文字会立即出现在电视上</string>

@@ -36,6 +36,7 @@ import com.lnh.nasmusictv.backend.network.mv.MvSearchManager
 import com.lnh.nasmusictv.backend.network.mv.MvPersistentCache
 import com.lnh.nasmusictv.backend.network.netease.NeteaseOpenApi
 import com.lnh.nasmusictv.data.prefs.AppPreferences
+import com.lnh.nasmusictv.data.update.UpdateManager
 import com.lnh.nasmusictv.player.ModelDownloadManager
 import com.lnh.nasmusictv.player.PlayerManager
 import com.lnh.nasmusictv.util.AppLog
@@ -103,6 +104,9 @@ class NasMusicApp : Application(), ImageLoaderFactory {
     lateinit var qualityOverrides: com.lnh.nasmusictv.data.prefs.QualityOverrides
         private set
     lateinit var playlistEnricher: PlaylistEnricher
+        private set
+    /** 应用内自动更新管理器（§更新） */
+    lateinit var updateManager: UpdateManager
         private set
 
     // ---- F2-2 / L3：播放模式切换事件（通知栏按钮 / 系统媒体卡片 → UI 侧）----
@@ -330,6 +334,8 @@ val baiduOAuthClient: BaiduOAuthClient by lazy { BaiduOAuthClient(this, baiduOkH
         LogStore.init(filesDir)
         installCrashLogger()
         appPreferences = AppPreferences.getInstance(this)
+        // 应用内自动更新管理器（§更新）：挂在 applicationScope（IO），读取更新偏好
+        updateManager = UpdateManager(this, appPreferences, applicationScope)
         // 多码率：单曲覆盖存储（须在 networkMusicManager 构造前初始化，供 provider 闭包使用）
         qualityOverrides = com.lnh.nasmusictv.data.prefs.QualityOverrides(this)
         // R-7（第三类）：启动 provider 键内存镜像收集（DataStore Flow → @Volatile）
@@ -430,14 +436,27 @@ val baiduOAuthClient: BaiduOAuthClient by lazy { BaiduOAuthClient(this, baiduOkH
         downloadRepository = com.lnh.nasmusictv.backend.download.DownloadRepository(this)
         val downloadDao = downloadRepository.getDao()
         // 让本地曲库合并下载目录（扫描短路 MMR）与删除判定分支用
+        // 必须与 446/458 行同口径：无外部存储（mbx,nosdcard 电视）时回落到 filesDir/music。
+        // ⚠️ 关键：必须先判断 MEDIA_MOUNTED 再调 getExternalFilesDir——即使后面有 ?: fallback，
+        // 调用本身就会让 Vold 去查 /storage/sdcard0 卷并打
+        // "E/Vold Failed to find mounted volume for .../files/Music/"（每 30 秒一次）。
+        // 未挂载时直接用内部目录，根本不碰 getExternalFilesDir，Vold 就不会刷错。
+        fun externalMusicDir(): File {
+            val mounted = android.os.Environment.getExternalStorageState() ==
+                android.os.Environment.MEDIA_MOUNTED
+            if (mounted) {
+                getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)?.let { return it }
+            }
+            return File(filesDir, "music")
+        }
         localMusicRepository.attachDownloadSource(
             downloadDao,
-            downloadRootProvider = { getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) }
+            downloadRootProvider = { externalMusicDir() }
         )
         storageGuard = com.lnh.nasmusictv.backend.download.StorageGuard(
             this,
             // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 dir="" 条目
-            rootProvider = { getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) ?: File(filesDir, "music") }
+            rootProvider = { externalMusicDir() }
         )
         val downloadResolver = com.lnh.nasmusictv.backend.download.StreamUrlResolver(
             adapter = { backendRegistry.getAdapter() },
@@ -449,7 +468,7 @@ val baiduOAuthClient: BaiduOAuthClient by lazy { BaiduOAuthClient(this, baiduOkH
         this.downloadResolver = downloadResolver
         val pathBuilder = com.lnh.nasmusictv.backend.download.DownloadPathBuilder {
             // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 dir="" 条目
-            getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) ?: File(filesDir, "music")
+            externalMusicDir()
         }
         val coverWriter = com.lnh.nasmusictv.backend.download.CoverFileWriter(
             baiduOkHttpClient,

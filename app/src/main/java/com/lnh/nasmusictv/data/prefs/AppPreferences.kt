@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -71,6 +72,8 @@ class AppPreferences internal constructor(private val context: Context) {
     /** 照片墙域（§7.3，17 个字段；进 AppSettings 备份 JSON） */
     val photoWall: PhotoWallPrefs by lazy { PhotoWallPrefs(this) }
     val settings: GeneralSettingsPrefs by lazy { GeneralSettingsPrefs(this) }
+    /** 应用内自动更新偏好域（开关 / 已跳过版本 / 上次检查时间） */
+    val update: UpdatePrefs by lazy { UpdatePrefs(this) }
 
     companion object {
         private const val TAG = "AppPreferences"
@@ -989,3 +992,38 @@ private fun PhotoTransitionId?.nameOrDefault(): String =
 /** 画面适配：null → [PhotoScaleMode.Default]（`CROP`） */
 private fun PhotoScaleMode?.nameOrDefault(): String =
     this?.name ?: PhotoScaleMode.Default.name
+
+// =====================================================================
+// 应用内自动更新偏好域（§更新）
+// 独立于 AppSettings：这类「这台设备要不要自动检查」的查看偏好不进备份 JSON，
+// 与日志级别过滤（keyLogsMinLevel）同口径。
+// =====================================================================
+// 应用内自动更新（2026-11-03）偏好键：按本文件既有约定，键为文件级 `internal val`
+// （与 GeneralSettingsPrefs.kt 的 keyDarkTheme 等同口径），由同文件的 UpdatePrefs 读取。
+internal val keyAutoCheckUpdates = booleanPreferencesKey("settings_auto_check_updates")
+internal val keySkippedUpdateVersion = stringPreferencesKey("settings_skipped_update_version")
+internal val keyLastUpdateCheck = longPreferencesKey("settings_last_update_check")
+
+class UpdatePrefs internal constructor(private val prefs: AppPreferences) {
+
+    /** 自动检查开关（默认开） */
+    val autoCheckUpdatesFlow: kotlinx.coroutines.flow.Flow<Boolean> =
+        prefs.prefsData.map { it[keyAutoCheckUpdates] ?: true }
+
+    /** 已跳过的版本（空串=未跳过） */
+    val skippedVersionFlow: kotlinx.coroutines.flow.Flow<String> =
+        prefs.prefsData.map { it[keySkippedUpdateVersion] ?: "" }
+
+    /** 上次自动检查时间（ms 时间戳，0=从未） */
+    val lastCheckFlow: kotlinx.coroutines.flow.Flow<Long> =
+        prefs.prefsData.map { it[keyLastUpdateCheck] ?: 0L }
+
+    suspend fun setAutoCheck(enabled: Boolean) =
+        prefs.prefsEdit { it[keyAutoCheckUpdates] = enabled }
+
+    suspend fun setSkippedVersion(version: String) =
+        prefs.prefsEdit { it[keySkippedUpdateVersion] = version }
+
+    suspend fun setLastCheck(timeMs: Long) =
+        prefs.prefsEdit { it[keyLastUpdateCheck] = timeMs }
+}

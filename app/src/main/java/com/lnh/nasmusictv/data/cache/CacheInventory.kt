@@ -62,6 +62,11 @@ object CacheInventory {
             labelRes = R.string.settings_cache_dir_local_covers, deletable = true, clearVia = "clearExtractedCoverCache"),
         CacheEntry(dir = "lyrics_http", root = CacheRoot.CACHE_DIR, group = CacheGroup.APP_CACHE,
             labelRes = R.string.settings_cache_dir_lyrics_http, deletable = false, clearVia = null),
+        // 应用内自动更新下载的安装包（cacheDir/updates，见 data/update/UpdateManager.kt）。
+        // 文件名固定为 nasmusic-update.apk，不会累积；安装完成后系统安装器仍可能持有句柄，
+        // 因此登记为只读（不提供清除入口），避免"清了正在安装的包"。
+        CacheEntry(dir = "updates", root = CacheRoot.CACHE_DIR, group = CacheGroup.APP_CACHE,
+            labelRes = R.string.settings_cache_dir_update_apk, deletable = false, clearVia = null),
 
         // ── 持久缓存（filesDir，今天完全不被统计 = §1.14 结论 1 的缺陷本体）──
         CacheEntry(dir = "lyrics_cache", root = CacheRoot.FILES_DIR, group = CacheGroup.PERSISTENT,
@@ -128,9 +133,17 @@ object CacheInventory {
             // filesDir/music（NasMusicApp:399/:410）；那条字面量在 G9 里以 cache-inventory-exempt 豁免，
             // 因为它与下面的 EXTERNAL_MUSIC 是同一份数据，重复登记会双计体积。
             // cache-inventory-exempt: 外部音乐目录的回落路径，与 EXTERNAL_MUSIC（dir=""）是同一份数据
-            CacheRoot.EXTERNAL_MUSIC -> context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
-                ?: File(context.filesDir, "music")
-            CacheRoot.EXTERNAL_ROOT -> context.getExternalFilesDir(null) ?: context.filesDir
+            // 先判断 MEDIA_MOUNTED 再调 getExternalFilesDir：未挂载时直接用 filesDir/music，
+            // 避免调用本身触发 Vold 刷 "Failed to find mounted volume"（mbx,nosdcard 电视）。
+            CacheRoot.EXTERNAL_MUSIC ->
+                if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED)
+                    context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
+                        ?: File(context.filesDir, "music")
+                else File(context.filesDir, "music")
+            CacheRoot.EXTERNAL_ROOT ->
+                if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED)
+                    context.getExternalFilesDir(null) ?: context.filesDir
+                else context.filesDir
             CacheRoot.DATABASES -> runCatching { context.getDatabasePath(e.dir) }.getOrNull()
                 ?: return null
         } ?: return null

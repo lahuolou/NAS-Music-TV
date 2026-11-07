@@ -395,6 +395,30 @@
     <string name="settings_group_connection_info">Connection Info</string>
     <string name="settings_group_capabilities">Capabilities</string>
     <string name="settings_group_opensource">Open Source &amp; License</string>
+    <!-- About: new "App Update" card (2026-11-03 auto-update feature) -->
+    <string name="settings_group_update">App Update</string>
+    <string name="settings_update_desc">Get the latest version from GitHub and install it (installation requires confirming the system installer)</string>
+    <string name="about_update_current">Current Version</string>
+    <string name="about_update_auto_check">Auto-check for Updates</string>
+    <string name="about_update_auto_check_desc">Periodically check for new versions in the background (at most once per day)</string>
+    <string name="about_update_check_now">Check for Updates</string>
+    <string name="about_update_check_now_desc">Query GitHub immediately for a new version</string>
+    <string name="about_update_checking">Checking for new version…</string>
+    <string name="about_update_status">Status</string>
+    <string name="about_update_up_to_date">Up to date</string>
+    <string name="about_update_latest">Latest Version</string>
+    <string name="about_update_size">Size</string>
+    <string name="about_update_available_desc">New version %s found, ready to download and install</string>
+    <string name="about_update_download_install">Download &amp; Install</string>
+    <string name="about_update_download_install_desc">Download the APK then launch the system installer</string>
+    <string name="about_update_skip">Skip this version</string>
+    <string name="about_update_skip_desc">Stop showing this version</string>
+    <string name="about_update_view_notes">View Release Notes</string>
+    <string name="about_update_view_notes_desc">Open the GitHub Release page in a browser</string>
+    <string name="about_update_downloading">Downloading… %1$d / %2$d MB</string>
+    <string name="about_update_error">Update error: %s</string>
+    <string name="about_update_retry">Retry</string>
+    <string name="about_update_retry_desc">Check for the latest version again</string>
     <string name="settings_dark_theme">Dark Theme</string>
     <string name="settings_dark_theme_desc">Use dark background to protect eyes</string>
     <string name="settings_animations">Animations</string>
@@ -411,6 +435,9 @@
     <string name="settings_clear_lyrics_cache">Clear Lyrics Cache</string>
     <string name="settings_clear_lyrics_cache_desc">Delete all cached lyrics files</string>
     <string name="settings_clear_cover_cache">Clear Cover Cache (Coil)</string>
+    <string name="settings_clear_all">Clear All Caches</string>
+    <string name="settings_clear_all_desc">Clear all regenerable caches (lyrics, covers, extracted art, separation artifacts, MV) in one go. Databases and downloaded songs are kept.</string>
+    <string name="status_all_caches_cleared">All caches cleared</string>
     <!-- Cache section three card titles (T8 built two; T8b split out "Usage &amp; Storage") -->
     <string name="settings_group_cache_policy">Cache Policy</string>
     <string name="settings_group_cache_occupancy">Usage &amp; Storage</string>
@@ -435,6 +462,7 @@
     <string name="settings_cache_dir_cover_url">Cover URL Table</string>
     <string name="settings_cache_dir_cover_url_desc">Re-resolved online after clearing</string>
     <string name="settings_cache_dir_lyrics_http">Lyrics network cache</string>
+    <string name="settings_cache_dir_update_apk">Update package (temp)</string>
     <string name="settings_cache_dir_local_lrc">Local Lyrics Files</string>
     <string name="settings_cache_dir_local_lrc_ext">External Lyrics Files</string>
     <string name="settings_cache_dir_local_lrc_desc">Your own LRC files, never deleted</string>
@@ -1475,7 +1503,6 @@
     <string name="backup_msg_restore_ok">Restore succeeded</string>
     <string name="backup_msg_restore_format">Restore failed: data may be incompatible</string>
     <string name="backup_msg_restore_failed">Restore failed: %1$s</string>
-    <string name="local_input_subtitle">Scan to input - text will appear on TV</string>
     <string name="local_input_placeholder">Enter song/artist name…</string>
     <string name="local_input_submit">Send to TV</string>
     <string name="local_input_hint">You can input repeatedly; each send appears on TV immediately</string>

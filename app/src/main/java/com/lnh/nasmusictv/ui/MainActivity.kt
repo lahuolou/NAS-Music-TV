@@ -189,6 +189,10 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        // 〔自动更新 · 2026-11-03〕开机静默检查：仅在开启自动检查、且距上次检查超过 24h 时
+        // 触发一次后台检查（更新内部状态，不弹窗）；用户在「关于 → 应用更新」可见结果。
+        (application as? NasMusicApp)?.updateManager?.maybeAutoCheck()
+
         setContent {
             val settings by viewModel.appSettings.collectAsState(initial = com.lnh.nasmusictv.data.model.AppSettings())
             // TV-only：形态因子 UiMode 已随手机 UI 下线移除，统一走 TV 路径。
