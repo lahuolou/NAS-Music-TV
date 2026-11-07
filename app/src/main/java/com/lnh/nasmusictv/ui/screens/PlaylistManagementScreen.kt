@@ -59,10 +59,12 @@ fun PlaylistManagementScreen(
     onDeletePlaylist: (Playlist) -> Unit,
     onPlayPlaylist: (Playlist) -> Unit,
     onRemoveSong: (String) -> Unit, // songId
+    onImportPlaylist: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
 
     val playlistListState = rememberLazyListState()
     val playlistFirstFocusRequester = remember { FocusRequester() }
@@ -138,6 +140,11 @@ fun PlaylistManagementScreen(
                         ButtonChip(
                             text = "+ " + stringResource(R.string.playlist_create),
                             onClick = { showCreateDialog = true }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        ButtonChip(
+                            text = "导入歌单",
+                            onClick = { showImportDialog = true }
                         )
                     }
 
@@ -275,6 +282,22 @@ fun PlaylistManagementScreen(
                     showCreateDialog = false
                 },
                 onDismiss = { showCreateDialog = false }
+            )
+        }
+
+        // 导入歌单对话框
+        if (showImportDialog) {
+            TextInputDialog(
+                title = "导入歌单",
+                hint = "粘贴网易云/QQ音乐分享链接",
+                initialValue = "",
+                onConfirm = { url ->
+                    if (url.isNotBlank()) {
+                        onImportPlaylist(url.trim())
+                    }
+                    showImportDialog = false
+                },
+                onDismiss = { showImportDialog = false }
             )
         }
     }   // Box

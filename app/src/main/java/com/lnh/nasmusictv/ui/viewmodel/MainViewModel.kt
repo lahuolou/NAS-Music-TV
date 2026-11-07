@@ -3650,6 +3650,40 @@ showError(getApplication<Application>().getString(R.string.toggle_favorite_error
         }
     }
 
+    /**
+     * 一键清理全部可清缓存（设置→缓存清理页顶部红色按钮）。
+     *
+     * 顺序执行 6 条单清链路（歌词 / 封面地址表 / 解包封面 / Coil / 分离产物 / MV），
+     * 每条单独 runCatching 互不影响；正在分离时跳过分离产物删除（与单清语义一致）。
+     * 只发一条汇总消息，不重复轰炸各单清的提示。
+     */
+    fun clearAllCaches() {
+        viewModelScope.launch {
+            val context = getApplication<android.app.Application>()
+            runCatching { lyricsManager.clearCache() }
+                .onFailure { AppLog.w("MainViewModel", "clearAllCaches lyrics failed", it) }
+            runCatching { nasMusicApp.coverUrlPersistentCache.clear() }
+                .onFailure { AppLog.w("MainViewModel", "clearAllCaches coverUrl failed", it) }
+            runCatching {
+                com.lnh.nasmusictv.backend.local.EmbeddedCoverExtractor.clearDiskCache(context.cacheDir)
+                com.lnh.nasmusictv.backend.local.LocalCoverExtractor(context).clearDiskCache()
+            }.onFailure { AppLog.w("MainViewModel", "clearAllCaches extracted covers failed", it) }
+            runCatching {
+                val imageLoader = Coil.imageLoader(context)
+                imageLoader.memoryCache?.clear()
+                imageLoader.diskCache?.clear()
+            }.onFailure { AppLog.w("MainViewModel", "clearAllCaches coil failed", it) }
+            if (!vocalVM.separating.value) {
+                runCatching { vocalVM.clearAllSeparationArtifacts() }
+                    .onFailure { AppLog.w("MainViewModel", "clearAllCaches separation failed", it) }
+            }
+            runCatching { mvVM.clearPersistentCache {} }
+                .onFailure { AppLog.w("MainViewModel", "clearAllCaches mv failed", it) }
+            postLocalConnectMessage(
+                context.getString(R.string.status_all_caches_cleared))
+        }
+    }
+
     // （clearMvPersistentCache / clearAllSeparationArtifacts 已迁至子 ViewModel 转发区，勿重复定义）
 
     // --- B-4 均衡器 ---
@@ -3767,6 +3801,81 @@ showError(getApplication<Application>().getString(R.string.toggle_favorite_error
                 postLocalConnectMessage(getApplication<Application>().getString(R.string.delete_failed_with_msg, e.message))
             }
         }
+    }
+
+    /**
+     * 从分享链接导入歌单（网易云/QQ音乐等）
+     * 解析链接 → 获取歌单歌曲 → 创建新歌单 → 添加歌曲
+     */
+    fun importPlaylistFromUrl(url: String) {
+        viewModelScope.launch {
+            try {
+                // 1. 从链接提取歌单 ID
+                val playlistId = extractPlaylistIdFromUrl(url)
+                if (playlistId.isNullOrBlank()) {
+                    postLocalConnectMessage("无法从链接解析歌单 ID")
+                    return@launch
+                }
+                AppLog.d("PlaylistImport", "importPlaylistFromUrl: playlistId=$playlistId")
+
+                // 2. 获取歌单歌曲
+                val songs = nasMusicApp.networkMusicManager.getPlaylist(playlistId)
+                if (songs.isEmpty()) {
+                    postLocalConnectMessage("未获取到歌单歌曲")
+                    return@launch
+                }
+                AppLog.d("PlaylistImport", "importPlaylistFromUrl: got ${songs.size} songs")
+
+                // 3. 创建新歌单
+                val playlistName = "导入歌单 $playlistId"
+                val adapter = backendRegistry.getAdapter()
+                if (adapter == null) {
+                    postLocalConnectMessage("后端未连接，无法创建歌单")
+                    return@launch
+                }
+                val newPlaylist = adapter.createPlaylist(playlistName)
+                if (newPlaylist == null) {
+                    postLocalConnectMessage("创建歌单失败")
+                    return@launch
+                }
+
+                // 4. 添加歌曲到歌单
+                var added = 0
+                for (song in songs) {
+                    if (adapter.addToPlaylist(newPlaylist.id, song.id)) {
+                        added++
+                    }
+                }
+                AppLog.d("PlaylistImport", "importPlaylistFromUrl: added $added songs to playlist ${newPlaylist.name}")
+
+                // 5. 刷新歌单列表
+                val current = _playlists.value.dataOrNull() ?: emptyList()
+                _playlists.value = UiState.Success(current + newPlaylist)
+
+                postLocalConnectMessage("导入成功：$added 首歌曲")
+            } catch (e: Exception) {
+                AppLog.e("PlaylistImport", "importPlaylistFromUrl failed", e)
+                postLocalConnectMessage("导入失败：${e.message}")
+            }
+        }
+    }
+
+    /** 从分享链接提取歌单 ID */
+    private fun extractPlaylistIdFromUrl(url: String): String? {
+        // 支持格式：
+        // https://music.163.com/playlist?id=123456
+        // https://music.163.com/#/playlist?id=123456
+        // https://y.music.163.com/m/playlist?id=123456
+        try {
+            val uri = android.net.Uri.parse(url)
+            val id = uri.getQueryParameter("id")
+            if (!id.isNullOrBlank()) return id
+        } catch (e: Exception) {
+            // Uri.parse 失败，用正则兜底
+        }
+        // 正则兜底
+        val regex = Regex("[?&]id=([^&]+)")
+        return regex.find(url)?.groupValues?.getOrNull(1)
     }
 
     fun playPlaylist(playlist: Playlist) {

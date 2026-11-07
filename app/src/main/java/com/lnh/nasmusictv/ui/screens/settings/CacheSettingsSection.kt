@@ -41,6 +41,8 @@ data class CacheSettingsActions(
     val onClearCoverUrlCache: (() -> Unit)? = null,
     /** T8b：`cacheDir/cover_cache_*` + `cacheDir/album_covers/` */
     val onClearExtractedCoverCache: (() -> Unit)? = null,
+    /** 一键清理全部可再生成缓存（卡③顶部红色大按钮） */
+    val onClearAllCaches: (() -> Unit)? = null,
 )
 
 /**
@@ -105,8 +107,19 @@ internal fun CacheSettingsSection(
                 }
             }
         }
-        // 卡③ 缓存清理（6 个入口）
+        // 卡③ 缓存清理（一键全清 + 6 个分类入口）
         SettingsGroupCard(title = stringResource(R.string.settings_group_cache_clear)) {
+            if (actions.onClearAllCaches != null) {
+                // 一键全清放最顶：范围最大、误触代价高（不删数据库与已下载歌曲）
+                SettingActionButton(
+                    label = stringResource(R.string.settings_clear_all),
+                    description = stringResource(R.string.settings_clear_all_desc),
+                    onClick = {
+                        actions.onClearAllCaches?.invoke()
+                        refreshKey++
+                    },
+                )
+            }
             if (actions.onClearLyricsCache != null) {
                 SettingActionButton(
                     label = stringResource(R.string.settings_clear_lyrics_cache),

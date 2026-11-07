@@ -171,6 +171,7 @@ internal fun SettingsBranch(
                         onClearSeparationArtifacts = { viewModel.clearSeparationArtifacts() },
                         onClearCoverUrlCache = { viewModel.clearCoverUrlCache() },
                         onClearExtractedCoverCache = { viewModel.clearExtractedCoverCache() },
+                        onClearAllCaches = { viewModel.clearAllCaches() },
                         // T8b：CACHE「占用与存储」首行剩余空间（StorageGuard 的 30s 轮询值）
                         storageAvailableBytes = storageAvailableBytes,
                         onOpenEqualizer = { viewModel.navVM.navigateTo(Screen.Equalizer) },

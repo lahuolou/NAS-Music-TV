@@ -37,6 +37,7 @@ internal fun PlaylistManagementBranch(
                             viewModel.navVM.navigateTo(Screen.NowPlaying)
                         },
                         onRemoveSong = { songId -> viewModel.removeFromPlaylist(songId) },
+                        onImportPlaylist = { url -> viewModel.importPlaylistFromUrl(url) },
                         onBack = { viewModel.navVM.navigateTo(Screen.Library) }
                     )
 }
