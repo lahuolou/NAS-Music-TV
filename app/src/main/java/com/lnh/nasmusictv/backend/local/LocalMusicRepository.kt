@@ -30,6 +30,7 @@ class LocalMusicRepository(
     // 补 @Volatile 对齐 S4 先例（Kotlin 允许构造属性标注字段级 @Volatile）。
     @Volatile private var downloadDao: com.lnh.nasmusictv.backend.download.db.DownloadSongDao? = null,
     @Volatile private var downloadRootProvider: () -> java.io.File? = {
+        // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 EXTERNAL_MUSIC（dir=""）条目
         // 默认回落：不调 getExternalFilesDir（无外部存储时会触发 Vold 错误），
         // NasMusicApp.onCreate 会立即调 attachDownloadSource 覆盖此 lambda。
         java.io.File(context.filesDir, "music")

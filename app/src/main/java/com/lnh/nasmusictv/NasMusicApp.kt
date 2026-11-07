@@ -447,6 +447,7 @@ val baiduOAuthClient: BaiduOAuthClient by lazy { BaiduOAuthClient(this, baiduOkH
             if (mounted) {
                 getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)?.let { return it }
             }
+            // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 EXTERNAL_MUSIC（dir=""）条目
             return File(filesDir, "music")
         }
         localMusicRepository.attachDownloadSource(

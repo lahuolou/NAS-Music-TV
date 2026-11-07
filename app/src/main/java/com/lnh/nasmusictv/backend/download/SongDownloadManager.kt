@@ -89,6 +89,7 @@ class SongDownloadManager(
         if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED) {
             context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)?.let { return it }
         }
+        // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 EXTERNAL_MUSIC（dir=""）条目
         return java.io.File(context.filesDir, "music")
     }
 

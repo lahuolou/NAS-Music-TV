@@ -135,11 +135,13 @@ object CacheInventory {
             // cache-inventory-exempt: 外部音乐目录的回落路径，与 EXTERNAL_MUSIC（dir=""）是同一份数据
             // 先判断 MEDIA_MOUNTED 再调 getExternalFilesDir：未挂载时直接用 filesDir/music，
             // 避免调用本身触发 Vold 刷 "Failed to find mounted volume"（mbx,nosdcard 电视）。
-            CacheRoot.EXTERNAL_MUSIC ->
+            CacheRoot.EXTERNAL_MUSIC -> {
+                // cache-inventory-exempt: 外部音乐目录的回落路径，已计入 CacheInventory 的 EXTERNAL_MUSIC（dir=""）条目
+                val fallback = File(context.filesDir, "music")
                 if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED)
-                    context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
-                        ?: File(context.filesDir, "music")
-                else File(context.filesDir, "music")
+                    context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) ?: fallback
+                else fallback
+            }
             CacheRoot.EXTERNAL_ROOT ->
                 if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED)
                     context.getExternalFilesDir(null) ?: context.filesDir
