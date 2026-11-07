@@ -18,8 +18,7 @@
   5. 输出 markdown 表 + 明细，落到 stdout。
 
 用法：
-  "C:/Users/hxzha/.workbuddy-ai/binaries/python/versions/3.13.12/python.exe" \
-      logs_temp/renderer_cost_audit.py > logs_temp/renderer_cost_audit.md
+  python logs_temp/renderer_cost_audit.py > logs_temp/renderer_cost_audit.md
 """
 
 import os

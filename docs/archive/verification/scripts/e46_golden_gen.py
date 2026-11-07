@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """E46 K3/K4 对账生成器：从冻结的浏览器原型取**权威期望值**，生成 Kotlin 黄金测试。
 
-用法（托管 venv）：
-    C:/Users/hxzha/.workbuddy/binaries/python/envs/default/Scripts/python.exe \n        docs/archive/verification/scripts/e46_golden_gen.py
+用法（任意 Python 3）：
+    python docs/archive/verification/scripts/e46_golden_gen.py
 
 ⚠️ 本脚本是 `TripodFogGoldenTest.kt` 期望值的**唯一再生源**（E44 D24 的同款纪律：
    数字只能由脚本再生，⛔ 手抄）。改云场/楼场数学后必须重跑它并把结果一起提交。
@@ -37,7 +37,7 @@ KT = os.path.join(
     "visualizer", "renderers", "TripodFogGoldenTest.kt",
 )
 LOG = os.path.join(ROOT, "logs_temp", "gen_golden.log")
-NODE = "C:/Users/hxzha/.workbuddy/binaries/node/versions/22.22.2-6/node.exe"
+NODE = os.environ.get("NODE_BIN", "node")
 
 # ─────────────────────────── 探针表 ───────────────────────────
 # (key, js_expr, kotlin_expr) —— js_expr 在原型 IIFE 作用域内求值；kotlin_expr 在测试类内求值。

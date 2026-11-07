@@ -29,7 +29,11 @@ class LocalMusicRepository(
     // P3（2026-09-22 审查）：attachDownloadSource 在主线程写、IO 协程读——
     // 补 @Volatile 对齐 S4 先例（Kotlin 允许构造属性标注字段级 @Volatile）。
     @Volatile private var downloadDao: com.lnh.nasmusictv.backend.download.db.DownloadSongDao? = null,
-    @Volatile private var downloadRootProvider: () -> java.io.File? = { context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) }
+    @Volatile private var downloadRootProvider: () -> java.io.File? = {
+        // 默认回落：不调 getExternalFilesDir（无外部存储时会触发 Vold 错误），
+        // NasMusicApp.onCreate 会立即调 attachDownloadSource 覆盖此 lambda。
+        java.io.File(context.filesDir, "music")
+    }
 ) {
     companion object { private const val TAG = "LocalMusicRepo" }
 

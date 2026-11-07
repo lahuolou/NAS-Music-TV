@@ -8592,7 +8592,7 @@ Box(Modifier.size(portraitTouchTarget(44.dp))      // 外层承担热区（竖�
 | **同步改写的引用** | **68 处**，涉及 **29 个文件** |
 | 源码侧（KDoc 注释路径） | `ApiProbe.kt`、`BaiduNetdiskConfig.kt`、`PlayStatsAggregator.kt`、`PlayStatsRepository.kt`、`RadioSongScorer.kt`、`MediaLibraryTree.kt`、`SleepTimerController.kt`、`BeatDetectorTest.kt`、`ViewModelEvents.kt`、`HqSeparationOrchestrator.kt`、`SpectralMaskProcessor.kt` |
 | 文档侧 | `AGENTS.md`、`CHANGELOG.md`、本文档、`docs/archive/*`（多个已归档文档互相引用） |
-| 记忆日志 | `.workbuddy-ai/memory/*`、`.workbuddy/memory/*` —— 机械链接保活 |
+| 记忆日志 | `memory/*` —— 机械链接保活 |
 | `docs/` 根目录 | 15 → **2**（三轮累计 62 → 2，−60） |
 | 死链 | **0 新增**（仍为既有旧断链 `features-plan.md`，`HEAD` 中即存在） |
 
@@ -8615,7 +8615,7 @@ Box(Modifier.size(portraitTouchTarget(44.dp))      // 外层承担热区（竖�
 
 **未动的文件**：`docs/archive/snapshot/`（16 张截图，非文档；2026-10-29 批次 0b 自 `docs/snapshot/` 移入归档）。
 另有 `docs/music-visualizer-e05-circular-ring.miora` + `_assets/`（E05 圆形频谱环概念图，
-由 WorkBuddy 设计画布于 2026-09-12 生成）—— 被 `.gitignore:83-84`（`docs/*.miora`、
+由设计画布于 2026-09-12 生成）—— 被 `.gitignore`（`docs/*.miora`、
 `docs/*_assets/`）排除、**未入库**，归档时按最小改动原则未移动；
 **其后经所有者确认已删除**（对应功能 `CIRCULAR_RING` 早已上线且是默认主题，
 素材无任何引用，无留档价值）。

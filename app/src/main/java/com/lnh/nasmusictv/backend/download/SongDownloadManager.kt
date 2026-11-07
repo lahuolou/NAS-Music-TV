@@ -80,6 +80,18 @@ class SongDownloadManager(
         private const val MAX_FILE_SIZE_FALLBACK = 8L * 1024 * 1024  // 8MB 预估兜底
     }
 
+    /**
+     * 下载根目录：先判断外部存储是否挂载，未挂载直接用内部 filesDir/music。
+     * 否则即使 getExternalFilesDir 返回 null，调用本身也会让 Vold 刷
+     * "Failed to find mounted volume for /storage/sdcard0/.../files/Music/"（mbx,nosdcard 电视）。
+     */
+    private fun musicRoot(): java.io.File {
+        if (android.os.Environment.getExternalStorageState() == android.os.Environment.MEDIA_MOUNTED) {
+            context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)?.let { return it }
+        }
+        return java.io.File(context.filesDir, "music")
+    }
+
     private val _downloadStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
     val downloadStates: StateFlow<Map<String, DownloadState>> = _downloadStates.asStateFlow()
 
@@ -553,7 +565,7 @@ class SongDownloadManager(
         }
         // 回收空目录（从下载根目录向上遍历删除空目录，保留根）
         runCatching {
-            val root = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
+            val root = musicRoot()
             if (root != null && root.exists()) {
                 root.walkTopDown().filter { it.isDirectory && it != root }
                     .sortedByDescending { it.absolutePath.length }
@@ -605,7 +617,7 @@ class SongDownloadManager(
      */
     private fun recoverFinalPathOrNull(entity: com.lnh.nasmusictv.backend.download.db.DownloadSongEntity): String? {
         return runCatching {
-            val root = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC) ?: return null
+            val root = musicRoot()
             val artist = DownloadPathBuilder.sanitize(entity.artist.ifBlank { "未知歌手" }).ifBlank { "未知歌手" }
             val album = DownloadPathBuilder.sanitize(entity.album.ifBlank { DownloadPathBuilder.DEFAULT_ALBUM }).ifBlank { DownloadPathBuilder.DEFAULT_ALBUM }
             if (entity.title.isBlank()) return null
@@ -638,7 +650,7 @@ class SongDownloadManager(
     suspend fun recoverAfterCrash() {
         withContext(Dispatchers.IO) {
             // 1. 清理 .tmp 下所有 .part
-            val root = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
+            val root = musicRoot()
             val tmpDir = root?.let { File(it, DownloadPathBuilder.TMP_DIR) }
             if (tmpDir != null && tmpDir.exists()) {
                 tmpDir.listFiles()?.filter { it.extension == "part" }?.forEach { it.delete() }

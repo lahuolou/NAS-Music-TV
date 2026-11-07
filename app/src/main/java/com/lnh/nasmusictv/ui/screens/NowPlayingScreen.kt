@@ -775,6 +775,12 @@ fun NowPlayingScreen(
                 // ── 2026-10-30 十九轮：歌词开启 + 菜单可见态的右列版式（全部自适应）──
                 // 字号 -12%、歌词容器顶部保护内边距 —— 按 idleProgress 插值：
                 // 可见态生效，5s 隐藏态严格归位图一定稿。
+                // ── 2026-11-04：歌词正文字号跟随导航可见态 ──
+                // 导航（chrome）没隐藏时歌词大一号（用户要求），5s 隐藏态归位 1；
+                // 标题/歌手仍走原 -12% 让位逻辑（lyricsOnFontScale）。
+                val lyricsChromeFontScale = androidx.compose.ui.util.lerp(
+                    PlayerVisualSpec.LYRICS_CHROME_VISIBLE_FONT_SCALE, 1f, idleProgress
+                )
                 val lyricsOnFontScale = androidx.compose.ui.util.lerp(
                     PlayerVisualSpec.LYRICS_ON_FONT_SCALE, 1f, idleProgress
                 )
@@ -900,11 +906,11 @@ fun NowPlayingScreen(
                                 currentTimeMs = displayLyricsTimeMs,
                                 highlightMode = highlightMode,
                                 isPlaying = isPlaying,
-                                // 字号乘数：用户档位（lyricsFontScale）× 菜单可见态 -12%
-                                // （隐藏态经 idleProgress 插值归位 1）。
+                                // 字号乘数：用户档位（lyricsFontScale）× 导航可见态放大 1.15
+                                // （5s 隐藏态经 idleProgress 插值归位 1；标题/歌手仍用 lyricsOnFontScale -12%）。
                                 // 2026-10-30 定稿：隐藏态歌词**不再随黑胶放大**（原 lyricIdleScale）——
                                 // 改为行槽收窄多排几行，字号与可见态一致（见 LyricsView idleProgress 文档）。
-                                fontSizeMultiplier = lyricsFontScale * lyricsOnFontScale,
+                                fontSizeMultiplier = lyricsFontScale * lyricsChromeFontScale,
                                 // 隐藏态歌词版式（锚点 0.50 + 行槽收窄多排几行），
                                 // 由 idleProgress 在可见/隐藏两套比例间插值
                                 idleProgress = idleProgress,

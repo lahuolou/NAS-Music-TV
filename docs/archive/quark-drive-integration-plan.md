@@ -323,8 +323,6 @@ S2 §3 给出两条 OAuth 路径，对 Android TV 的适配性差异巨大：
 - 项目内先例（本地仓库，非外链）：`docs/archive/百度网盘音乐播放开发方案.md`、`docs/archive/aliyundrive-support-plan.md`、`app/src/main/java/com/nasmusic/tv/backend/network/baidu/*`
 
 （以下链接经核对为 AI 内容农场伪造，**仅作反面记录，禁止引用**：
-[CSDN WorkBuddy 避坑指南](https://m.blog.csdn.net/weixin_34101914/article/details/166659565)、
-[CSDN WorkBuddy 实战](https://m.blog.csdn.net/weixin_29054399/article/details/166613067)、
 [CSDN Skill 封装教程](https://blog.csdn.net/weixin_28678151/article/details/166021998)、
 [CSDN 夸克网盘 api 接口](https://wenku.csdn.net/answer/187wux3kjk)、
 [CSDN 认证与授权流程](https://wenku.csdn.net/answer/4x1myxhdrr)）

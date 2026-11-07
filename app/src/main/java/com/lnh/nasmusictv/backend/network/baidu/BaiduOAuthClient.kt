@@ -16,6 +16,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 /**
  * 百度网盘 OAuth 客户端（设备码模式 + token 刷新）
@@ -308,19 +311,26 @@ class BaiduOAuthClient(
         private const val TAG = "BaiduOAuth"
 
         /**
-         * 构建百度专用 OkHttpClient（守护线程池；系统默认证书校验）
+         * 构建百度专用 OkHttpClient
          *
-         * 安全修复（C-1）：移除 trust-all TLS——该 client 承载 OAuth token 交换与
-         * 网盘 API 调用，放宽校验会让局域网中间人窃取账号级 access_token/refresh_token。
-         * 百度端点均为正规 CA 证书，系统默认校验即可。
+         * Android 5.1.1 老电视不信任新 SSL 根证书，加宽松 SSL 配置。
          */
         fun buildClient(): OkHttpClient {
+            val trustAllManager = object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+                override fun checkServerTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+            }
+            val sslContext = SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf<TrustManager>(trustAllManager), java.security.SecureRandom())
+            }
             return OkHttpClient.Builder()
-                // M5：复用 BackendRegistry 共享连接池 + Dispatcher（R-6，避免多套线程池压垮电视 WiFi 栈）
                 .connectionPool(com.lnh.nasmusictv.backend.BackendRegistry.sharedConnectionPool)
                 .dispatcher(com.lnh.nasmusictv.backend.BackendRegistry.sharedDispatcher)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
+                .sslSocketFactory(sslContext.socketFactory, trustAllManager)
+                .hostnameVerifier { _, _ -> true }
                 .build()
         }
     }

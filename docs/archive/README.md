@@ -359,7 +359,7 @@
 > ⚠️ **2026-10-29 批次 0b 归档**：`docs/slow-roads-verify/` → `docs/archive/verification/scripts/slow-roads-verify/`、
 > `docs/snapshot/` → `docs/archive/snapshot/`、`docs/11.html`（E50 千里江山早期预览原型，正式预览
 > 为 `docs/e50-qianli-jiangshan-preview.html`，无任何引用）→ `docs/archive/11.html`。
-> `docs/*.miora` / `docs/*_assets/`（gitignored 的 WorkBuddy 设计画布素材）已于
+> `docs/*.miora` / `docs/*_assets/`（gitignored 的 设计画布素材）已于
 > 2026-09-20 经所有者确认删除（对应功能早已上线，素材无引用）。
 
 | 文档 | 为什么是「活」的 |
@@ -554,7 +554,7 @@
 > ⚠️ **归档 ≠ 权威转移**：本篇仍是 E46 的**唯一方案依据**（所有者 2026-10-11 口径），`app/src/**` 里 16 处 `docs/archive/e46-tripod-fog-*` 的 KDoc 引用、§10.228/§10.230/§10.231 与 5 份验证脚本都指向它。⛔ 不要因为"已归档"就当历史草案处置。
 >
 > 引用改写 **18 个文件 / 33 处 `docs/` 前缀文本 + 4 处脚本路径常量**：10 个 Kotlin（`AppSettings` + 5 个 renderer 主文件 + 4 个测试类）、`docs/technical-overview.md`、两份被移动文档自身的互引，以及脚本常量 `e46_golden_gen.py:32` / `e46_fog_harness.js:14` / `e46_phase_kinematics.js:20` / `e46_visual_driver.mjs:21`（这三份 js 里的 `filename: 'e46-tripod-fog-preview.html:script'` 是 **vm 栈标签**、非路径，按原样保留）。
-> ⛔ 死链自检：`git ls-files -z | xargs -0 grep -In "docs/e46-tripod-fog"` → **只应剩本行这一条自指**（命令串本身），其余文件 **0 命中**（2026-10-14 实测；`logs_temp/` 与 `.workbuddy/` 是 gitignored 的一次性草稿，按规矩不追改，故按 `git ls-files` 扫而不是全树 grep——全树还会撞进 `output/` 里的浏览器 profile）。
+> ⛔ 死链自检：`git ls-files -z | xargs -0 grep -In "docs/e46-tripod-fog"` → **只应剩本行这一条自指**（命令串本身），其余文件 **0 命中**（2026-10-14 实测；`logs_temp/` 与 `.tmp/` 是 gitignored 的一次性草稿，按规矩不追改，故按 `git ls-files` 扫而不是全树 grep——全树还会撞进 `output/` 里的浏览器 profile）。
 > ✅ 再生脚本已在新路径**实跑通过**：`python docs/archive/verification/scripts/e46_golden_gen.py` 重写 `TripodFogGoldenTest.kt` 后 `git diff` 为空 ⇒ 路径迁移未改变任何对账数字。
 > ⚠️ 未进 `CHANGELOG.md`：本轮是**纯文档移动 + 归档登记**，按本仓规矩（文档改动不入 CHANGELOG）不登记。
 > `docs/` 根在本轮之后**入库的 Markdown = 3 篇**（`git ls-files docs | grep -E '^docs/[^/]+\.md$'` 实测：`technical-overview.md` 活文档、`conventions-adaptive-ui.md`、`visualizer-effects-list.md` 现役名册；**入库的原型 html = 0 份**）；另有另一在办会话新增、**尚未入库**的 `blackhole-*` / `e45-orbital-*` / `e47-snow-cedar-preview.html`，计数以实测为准，不在此定论。
@@ -609,7 +609,7 @@
 >
 > 引用改写 **9 个文件 / 15 处 `docs/` 前缀文本**：4 个 Kotlin（`AppSettings.kt` ×2、`BirdsFlockFlock.kt` ×1、`BirdsFlockMath.kt` ×2、`BirdsFlockRenderer.kt` ×2）、`docs/technical-overview.md` ×2、被移动文档自身互引（方案 ×2 / 原型 ×1）、`build_e49.py` ×2、`docs/archive/verification/results/e49_e47_device_verdict_2026-10-15.md` ×1。
 > ⚠️ 另有 **6 处脚本路径常量必须手改**（`doc_archive.py` 看不见）：`e49_flock_driver.mjs` ×2、`e49_flock_harness.js` ×3（脚本把路径写成 `path.join(ROOT, 'docs', 'e49-…')` 的**三段字面量**，把扩展名列表放宽也匹配不到）、`e49_flock_harness_final.txt` ×1（harness 自身写出的 JSON `page` 字段）。⛔ `harness.js` 里的 `filename: 'e49-birds-flock-preview.html:script'` 是 **vm 栈标签**、非路径，按原样保留（与 E46 同一先例）。
-> ⛔ 死链自检：`doc_archive.py verify` 报 **72 处**，逐条核对 `git show HEAD:<file> | grep` 后确认**全部为改动前既有**（`.workbuddy*/memory/*`、`CHANGELOG.md`、`.superpowers/`、`docs/archive/` 内的老文档），**E49 相关 0 处**（`grep -ci "e49"` = 0）。`docs/archive/README.md` 的 `starry-sky-*` 引用改动前后均为 6 处 ⇒ 未被本次移动波及。
+> ⛔ 死链自检：`doc_archive.py verify` 报 **72 处**，逐条核对 `git show HEAD:<file> | grep` 后确认**全部为改动前既有**（`memory/*`、`CHANGELOG.md`、`.superpowers/`、`docs/archive/` 内的老文档），**E49 相关 0 处**（`grep -ci "e49"` = 0）。`docs/archive/README.md` 的 `starry-sky-*` 引用改动前后均为 6 处 ⇒ 未被本次移动波及。
 > ⚠️ 未进 `CHANGELOG.md`：本轮是**纯文档移动 + 归档登记**，按本仓规矩（文档改动不入 CHANGELOG）不登记；代码事实已在 `## []` 段内。
 > `docs/` 根当前**入库的 Markdown = 5 篇**（`git ls-tree --name-only HEAD docs/` 实测口径：`technical-overview.md` 活文档、`conventions-adaptive-ui.md`、`visualizer-effects-list.md` 现役名册、外加 `blackhole-visualizer-plan.md` / `e45-orbital-plan.md` 两篇在办方案）；**入库的原型 html = 2 份**（`blackhole-preview.html` / `e45-orbital-preview.html`）。⚠️ E48 的方案与原型已于 **2026-10-16 随 归档**（`git mv` 至 `docs/archive/`）⇒ 上文两句的数字已由「6 篇 / 3 份」改为「5 篇 / 2 份」，与第十轮尾部的旧表述不同，以本段实测为准。
 
@@ -625,7 +625,7 @@
 >
 > 引用改写 **8 个文件 / 12 处 `docs/` 前缀文本**：`docs/technical-overview.md` ×2、方案自身互引 ×2、`memory/e48-desert-smoke-preview-status.md` ×1、四个校验脚本的路径常量与注释（`e48_smoke_harness.js` ×2、`e48_visual_driver.mjs` ×2、`e48_trace_camel.py` ×2、`e48_ref_camel.py` ×1）。⛔ `harness.js` 里的 `filename: 'e48-desert-smoke-preview.html:script'` 是 **vm 栈标签**、非路径，按原样保留（与 E46 / E49 同一先例）。
 >
-> ⛔ 死链自检：`grep -rn "docs/e48-desert-smoke" .` 排除 `logs_temp/` / `.workbuddy-ai/` / `app/build/` 后**残留 0 处** ⇒ 全仓再无指向旧路径的活引用（`app/src/**` 的 KDoc 一开始就按 archive 路径写，未被本次移动波及）。
+> ⛔ 死链自检：`grep -rn "docs/e48-desert-smoke" .` 排除 `logs_temp/` / `.tmp/` / `app/build/` 后**残留 0 处** ⇒ 全仓再无指向旧路径的活引用（`app/src/**` 的 KDoc 一开始就按 archive 路径写，未被本次移动波及）。
 >
 > ⚠️ 未进 `CHANGELOG.md`：本轮是**纯文档移动 + 归档登记**，按本仓规矩（文档改动不入 CHANGELOG）不登记；代码事实已在 `## []` 段内。
 

@@ -459,6 +459,13 @@ object PlayerVisualSpec {
     const val LYRICS_ON_FONT_SCALE = 0.88f
 
     /**
+     * 歌词开启且导航（chrome）仍可见时，**歌词正文**的放大系数。
+     * 用户要求：导航没隐藏时歌词「大一号」，导航 5s 隐藏（沉浸态）经 idleProgress 归位 1。
+     * 只作用于歌词正文，标题/歌手仍走 [LYRICS_ON_FONT_SCALE]（-12% 让位逻辑不变）。
+     */
+    const val LYRICS_CHROME_VISIBLE_FONT_SCALE = 1.15f
+
+    /**
      * 歌词容器的**顶部保护内边距**（占歌词视口高的比例）。
      * 稳态下「高亮行的上一行」恰好落在歌手名同一高度（实测 0.277 vs 歌手 0.281），
      * 仅靠顶部渐隐兜底 —— 给容器加这段内边距后歌词整体下压，与标题/歌手带
