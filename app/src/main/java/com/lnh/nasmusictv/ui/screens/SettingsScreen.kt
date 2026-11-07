@@ -46,6 +46,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
+import com.lnh.nasmusictv.NasMusicApp
 import com.lnh.nasmusictv.R
 import com.lnh.nasmusictv.data.model.AppSettings
 import com.lnh.nasmusictv.data.model.BaiduFile
@@ -58,8 +59,13 @@ import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.portraitTouchTarget
 import com.lnh.nasmusictv.ui.components.responsiveDialogSize
 import com.lnh.nasmusictv.ui.screens.netdisk.BaiduAuthDialog
-import com.lnh.nasmusictv.ui.screens.settings.AboutSettingsSection
+import com.lnh.nasmusictv.ui.screens.settings.AboutCapabilitiesCard
+import com.lnh.nasmusictv.ui.screens.settings.AboutConnectionCard
+import com.lnh.nasmusictv.ui.screens.settings.AboutOpenSourceCard
 import com.lnh.nasmusictv.ui.screens.settings.AboutSettingsState
+import com.lnh.nasmusictv.ui.screens.settings.AboutTitle
+import com.lnh.nasmusictv.ui.screens.settings.AboutVersionCard
+import com.lnh.nasmusictv.ui.screens.settings.AppUpdateCard
 import com.lnh.nasmusictv.ui.screens.settings.CacheSettingsActions
 import com.lnh.nasmusictv.ui.screens.settings.CacheSettingsSection
 import com.lnh.nasmusictv.ui.screens.settings.CacheSettingsState
@@ -135,6 +141,8 @@ fun SettingsScreen(
     /** T8b：封面地址表 / 解包封面两个新增清理入口 */
     onClearCoverUrlCache: (() -> Unit)? = null,
     onClearExtractedCoverCache: (() -> Unit)? = null,
+    /** 一键清理全部可再生成缓存（卡③顶部大按钮） */
+    onClearAllCaches: (() -> Unit)? = null,
     /** T8b：剩余空间（StorageGuard.availableBytes，⛔ 不要再起一个 StatFs） */
     storageAvailableBytes: Long = 0L,
     onOpenEqualizer: (() -> Unit)? = null,
@@ -745,15 +753,26 @@ var activeSection by remember { mutableStateOf(SettingsSection.GENERAL) }
                         onClearAllDownloadsRequested = { showClearDownloadsConfirm = true }
                     )
                 }
-                SettingsSection.ABOUT -> item {
-                    AboutSettingsSection(
-                        state = AboutSettingsState(
-                            isConnected = isConnected,
-                            serverDisplayName = serverDisplayName,
-                            backendApiVersion = backendApiVersion,
-                            apiVersions = apiVersions,
+                SettingsSection.ABOUT -> {
+                    // 五卡各自独立 item：TV 遥控器上下键移动焦点时 LazyColumn 才能逐卡滚动
+                    // （整页塞单 item 会导致下半屏按不到，见 AboutSection 头注释）
+                    item { AboutTitle() }
+                    item { AboutVersionCard() }
+                    item {
+                        AboutConnectionCard(
+                            AboutSettingsState(
+                                isConnected = isConnected,
+                                serverDisplayName = serverDisplayName,
+                                backendApiVersion = backendApiVersion,
+                                apiVersions = apiVersions,
+                            )
                         )
-                    )
+                    }
+                    item { AboutCapabilitiesCard() }
+                    item { AboutOpenSourceCard() }
+                    item {
+                        AppUpdateCard(updateManager = (LocalContext.current.applicationContext as NasMusicApp).updateManager)
+                    }
                 }
                 SettingsSection.CACHE -> item {
                     CacheSettingsSection(
@@ -770,6 +789,7 @@ var activeSection by remember { mutableStateOf(SettingsSection.GENERAL) }
                             onClearSeparationArtifacts = onClearSeparationArtifacts,
                             onClearCoverUrlCache = onClearCoverUrlCache,
                             onClearExtractedCoverCache = onClearExtractedCoverCache,
+                            onClearAllCaches = onClearAllCaches,
                         )
                     )
                 }

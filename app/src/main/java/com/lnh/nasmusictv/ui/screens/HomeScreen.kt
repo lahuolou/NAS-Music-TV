@@ -58,7 +58,6 @@ import com.lnh.nasmusictv.ui.LocalListBackHandler
 import com.lnh.nasmusictv.ui.components.FocusableSurface
 import com.lnh.nasmusictv.ui.components.MarqueeText
 import com.lnh.nasmusictv.ui.components.common.SectionHeader
-import com.lnh.nasmusictv.ui.components.common.ConnectedBadge
 import com.lnh.nasmusictv.ui.components.LocalFocusableContentColor
 import com.lnh.nasmusictv.ui.theme.NasMusicColors
 import androidx.compose.runtime.getValue
@@ -310,52 +309,8 @@ private fun WelcomeSection(
     weatherData: WeatherData?
 ) {
     Column {
-        // 标题
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(NasMusicColors.Primary, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "\u266A", color = NasMusicColors.TextPrimary, fontSize = FontSize.title())
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column {
-                // 标题：已连接时显示服务器名 + 「已连接」徽章；未连接时显示应用名
-                if (isConnected) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = serverDisplayName.ifBlank { stringResource(R.string.app_name) },
-                            color = NasMusicColors.TextPrimary,
-                            fontSize = FontSize.display(),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 320.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        ConnectedBadge()
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        color = NasMusicColors.TextPrimary,
-                        fontSize = FontSize.display(),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Text(
-                    text = if (isLibraryLoading) stringResource(R.string.common_loading)
-                           else if (!isConnected) stringResource(R.string.common_not_connected)
-                           else stringResource(R.string.home_ready),
-                    color = if (isConnected) NasMusicColors.Success else NasMusicColors.TextSecondary,
-                    fontSize = FontSize.body()
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        // 顶部导航栏已显示服务器名与「已连接」徽章，首页不再重复展示欢迎标题行
+        // （2026-11-04 按要求去掉这一整行：logo + 服务器名 + 已连接徽章 + 「已就绪」）
 
         // 统计卡片：竖屏改 2×2 网格（4 张横排竖屏必溢出，方案 §4.1）
         if (isConnected) {

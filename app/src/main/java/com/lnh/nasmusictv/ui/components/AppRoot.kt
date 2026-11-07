@@ -546,7 +546,7 @@ private fun TvTopNavBar(
             if (isConnected) {
                 // 已连接：显示当前服务器名称（过长时省略，避免顶栏挤压导航项）
                 Text(
-                    text = serverDisplayName.ifBlank { stringResource(R.string.app_name) },
+                    text = stripServerVersion(serverDisplayName).ifBlank { stringResource(R.string.app_name) },
                     color = NasMusicColors.TextPrimary,
                     fontSize = FontSize.subtitle(),
                     maxLines = 1,
@@ -651,6 +651,18 @@ private fun NavItem(
         }
     }
 }
+
+/**
+ * 顶栏服务器名去掉尾随的版本号，只保留协议名。
+ *
+ * 适配器在 initialize 时会把版本号拼进 [serverDisplayName]
+ * （如 Subsonic 1.16.1 / Navidrome 0.47.5），但顶栏只想要「Subsonic」
+ * 这类协议名。版本号仍在设置→关于页经 [com.lnh.nasmusictv.backend.BackendAdapter.getApiVersion] 展示，
+ * 此处剥离不影响其它位置的版本信息。
+ */
+private fun stripServerVersion(name: String): String =
+    // 先 trimEnd：`$` 锚点对尾随空格敏感，不先修剪会漏剥（如 "Subsonic 1.16.1 "）
+    name.trimEnd().replace(Regex("\\s+v?\\d+(?:\\.\\d+){1,3}$"), "").trimEnd()
 
 /**
  * 全屏可视化舞台覆盖层（20 套效果）。
