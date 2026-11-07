@@ -6,7 +6,33 @@
 
 ---
 
-## [v1.0.3] — 当前版本（`versionName=1.0.3`，`versionCode=6`）
+## [v1.0.5] — 当前版本（`versionName=1.0.5`，`versionCode=8`）
+
+把 v1.0.3 起一直留在本地、未并入 main 的改动正式合入，并修复老电视兼容问题。
+
+### Added
+- 应用内自动更新：设置 → 关于 → 应用更新卡片
+  - 自动检查（开机静默、每天最多一次，可在卡片内关闭）
+  - 手动检查、下载并安装（从 GitHub Release 拉取签名 APK，经 FileProvider 调起系统安装器；非 root 的 Android TV 需手动确认）
+  - 跳过特定版本、查看发布说明、下载进度、错误重试
+- 设置 → 缓存清理：「一键清理全部缓存」（歌词 / 封面地址表 / 解包封面 / Coil / 分离产物 / MV，不删数据库与已下载歌曲）
+- 歌单页「导入歌单」：粘贴分享链接解析歌曲并加入「我的歌单」（对话框自带手机遥控二维码）
+
+### Changed
+- 关于页由单卡改为五卡各自独立的 LazyColumn item，修复遥控器上下键只能在卡内跳焦点、滚不到下半屏的问题
+- 首页去掉与顶栏重复的「logo + 服务器名 + 已连接徽章 + 已就绪」标题行
+- 顶栏服务器名去掉适配器拼接的版本号，只显示协议名（版本号仍在关于页可见）
+- 播放页歌词正文字号跟随导航可见态（可见时放大 1.15 倍，5 秒隐藏后归位 1；标题与歌手仍走原 -12% 让位逻辑）
+- `versionCode` 提升至 8（高于已发布的 7，保证覆盖安装）
+
+### Fixed
+- 修复 Android 5.1.1 老电视访问百度网盘报 `Trust anchor for certification path not found`（恢复宽松 SSL 配置；该 client 承载 OAuth token 交换，属可用性优先的妥协）
+- 修复 mbx/nosdcard 电视上 Vold 每 30 秒刷 `E/Vold Failed to find mounted volume`（统一改为先判挂载状态再取外部目录）
+
+### Removed
+- 关于页的 GitHub 项目链接瓦片（仅保留版权说明文本）
+
+## [v1.0.3] — `versionName=1.0.3`，`versionCode=6`
 
 合并 `release/v1.0.0.4` 的独立功能，并把最低系统版本放宽到 Android 5.0（API 21）。
 
